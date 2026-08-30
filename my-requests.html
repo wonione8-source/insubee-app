@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <title>인슈비 — 내 상담</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+</head>
+<body>
+  <div class="app-container">
+    <div class="app-header">
+      <a href="/dashboard.html" style="color:var(--gray-600);font-size:22px;text-decoration:none">
+        <i class="ti ti-arrow-left"></i>
+      </a>
+      <span style="font-weight:700;font-size:17px">내 상담 요청</span>
+      <div style="width:22px"></div>
+    </div>
+
+    <div class="page-content">
+      <div class="tab-group">
+        <div class="tab-item active" onclick="filterRequests('all')">전체</div>
+        <div class="tab-item" onclick="filterRequests('pending')">대기중</div>
+        <div class="tab-item" onclick="filterRequests('active')">진행중</div>
+        <div class="tab-item" onclick="filterRequests('done')">완료</div>
+      </div>
+
+      <div id="requests-list">
+        <div class="spinner"></div>
+      </div>
+    </div>
+
+    <div class="bottom-nav">
+      <a href="/dashboard.html" class="nav-item"><i class="ti ti-home"></i>홈</a>
+      <a href="/agents.html" class="nav-item"><i class="ti ti-search"></i>설계사</a>
+      <a href="/my-requests.html" class="nav-item active"><i class="ti ti-message-circle"></i>상담</a>
+      <a href="/notifications.html" class="nav-item"><i class="ti ti-bell"></i>알림</a>
+      <a href="/mypage.html" class="nav-item"><i class="ti ti-user"></i>마이</a>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+  <script>
+    let allRequests = [];
+    let currentTab = 'all';
+
+    (async () => {
+      await requireAuth();
+      allRequests = await getMyRequests();
+      renderRequests();
+    })();
+
+    function filterRequests(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-item').forEach((el, i) => {
+        const tabs = ['all', 'pending', 'active', 'done'];
+        el.classList.toggle('active', tabs[i] === tab);
+      });
+      renderRequests();
+    }
+
+    function renderRequests() {
+      let filtered = allRequests;
+      if (currentTab === 'pending') filtered = allRequests.filter(r => r.status === 'pending');
+      else if (currentTab === 'active') filtered = allRequests.filter(r => ['accepted', 'in_progress'].includes(r.status));
+      else if (currentTab === 'done') filtered = allRequests.filter(r => ['completed', 'rejected', 'cancelled'].includes(r.status));
+
+      const container = document.getElementById('requests-list');
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <i class="ti ti-message-off"></i>
+            <p>${currentTab === 'all' ? '아직 상담 요청이 없습니다' : '해당 상태의 요청이 없습니다'}</p>
+            ${currentTab === 'all' ? '<a href="/agents.html" class="btn btn-secondary btn-sm mt-16">설계사 찾아보기</a>' : ''}
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(r => `
+        <div class="card">
+          <div class="flex-between mb-8">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div class="agent-avatar" style="width:44px;height:44px;font-size:16px">${(r.agents?.profiles?.name || '?')[0]}</div>
+              <div>
+                <div style="font-weight:700;font-size:15px">${r.agents?.profiles?.name || '설계사'}</div>
+                <div class="text-sm text-muted">${r.agents?.company || ''}</div>
+              </div>
+            </div>
+            <span class="status ${getStatusClass(r.status)}">${getStatusLabel(r.status)}</span>
+          </div>
+
+          <div style="background:var(--gray-50);border-radius:8px;padding:10px 12px;margin:8px 0">
+            <div class="text-sm"><strong>보험종류:</strong> ${r.insurance_type || '-'}</div>
+            ${r.message ? `<div class="text-sm mt-8"><strong>메시지:</strong> ${r.message}</div>` : ''}
+            <div class="text-sm mt-8"><strong>선호연락:</strong> ${r.preferred_contact === 'phone' ? '전화' : r.preferred_contact === 'video' ? '영상통화' : '채팅'}</div>
+          </div>
+
+          ${r.agent_response_message ? `
+            <div style="background:#EFF6FF;border-radius:8px;padding:10px 12px;margin:8px 0;border-left:3px solid var(--primary)">
+              <div class="text-sm" style="color:var(--primary);font-weight:600">설계사 응답</div>
+              <div class="text-sm mt-8">${r.agent_response_message}</div>
+            </div>
+          ` : ''}
+
+          <div class="flex-between mt-8">
+            <span class="text-sm text-muted">${timeAgo(r.created_at)}</span>
+            ${r.status === 'pending' ? `
+              <button class="btn btn-danger btn-sm" onclick="cancelRequest('${r.id}')">요청 취소</button>
+            ` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function cancelRequest(requestId) {
+      if (!confirm('상담 요청을 취소하시겠습니까?')) return;
+
+      try {
+        await supabase
+          .from('matching_requests')
+          .update({ status: 'cancelled' })
+          .eq('id', requestId);
+
+        allRequests = await getMyRequests();
+        renderRequests();
+        showToast('요청이 취소되었습니다');
+      } catch (err) {
+        showToast('오류가 발생했습니다');
+      }
+    }
+  </script>
+</body>
+</html>

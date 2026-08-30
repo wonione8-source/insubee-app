@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <title>인슈비 — 설계사 찾기</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+  <style>
+    .filter-bar {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      margin-bottom: 16px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .filter-bar::-webkit-scrollbar { display: none; }
+    .agent-specialty {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 8px;
+    }
+    .agent-specialty span {
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: var(--gray-100);
+      font-size: 11px;
+      color: var(--gray-600);
+    }
+    /* Agent Detail Modal */
+    .agent-detail-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .agent-detail-avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: var(--primary-light);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: 700;
+      margin: 0 auto 12px;
+    }
+    .detail-info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 16px 0;
+    }
+    .detail-info-item {
+      background: var(--gray-50);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+    }
+    .detail-info-item .label { font-size: 12px; color: var(--gray-500); }
+    .detail-info-item .value { font-size: 15px; font-weight: 700; margin-top: 2px; }
+    .review-item {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .review-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    .review-stars { color: var(--warning); font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <div class="app-header">
+      <a href="/dashboard.html" style="color:var(--gray-600);font-size:22px;text-decoration:none">
+        <i class="ti ti-arrow-left"></i>
+      </a>
+      <span style="font-weight:700;font-size:17px">설계사 찾기</span>
+      <div style="width:22px"></div>
+    </div>
+
+    <div class="page-content">
+      <!-- 검색 -->
+      <div class="search-bar">
+        <i class="ti ti-search"></i>
+        <input type="text" class="form-input" id="search-input"
+               placeholder="이름, 보험사로 검색" oninput="debounceSearch()">
+      </div>
+
+      <!-- 필터 -->
+      <div class="filter-bar" id="filter-bar">
+        <div class="chip active" data-filter="all" onclick="filterBy('all')">전체</div>
+        <div class="chip" data-filter="건강보험" onclick="filterBy('건강보험')">건강보험</div>
+        <div class="chip" data-filter="생명보험" onclick="filterBy('생명보험')">생명보험</div>
+        <div class="chip" data-filter="손해보험" onclick="filterBy('손해보험')">손해보험</div>
+        <div class="chip" data-filter="자동차보험" onclick="filterBy('자동차보험')">자동차보험</div>
+        <div class="chip" data-filter="연금보험" onclick="filterBy('연금보험')">연금보험</div>
+      </div>
+
+      <!-- 지역 필터 -->
+      <div style="margin-bottom:16px">
+        <select class="form-input" id="region-select" onchange="loadAgents()" style="font-size:14px;padding:10px 14px">
+          <option value="">전체 지역</option>
+        </select>
+      </div>
+
+      <!-- 설계사 목록 -->
+      <div id="agents-list">
+        <div class="spinner"></div>
+      </div>
+    </div>
+
+    <!-- 설계사 상세 모달 -->
+    <div class="modal-overlay" id="agent-modal">
+      <div class="modal">
+        <div class="modal-handle"></div>
+        <div id="agent-detail-content"></div>
+      </div>
+    </div>
+
+    <!-- Bottom Nav -->
+    <div class="bottom-nav">
+      <a href="/dashboard.html" class="nav-item"><i class="ti ti-home"></i>홈</a>
+      <a href="/agents.html" class="nav-item active"><i class="ti ti-search"></i>설계사</a>
+      <a href="/my-requests.html" class="nav-item"><i class="ti ti-message-circle"></i>상담</a>
+      <a href="/notifications.html" class="nav-item"><i class="ti ti-bell"></i>알림</a>
+      <a href="/mypage.html" class="nav-item"><i class="ti ti-user"></i>마이</a>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+  <script>
+    let currentFilter = 'all';
+    let searchTimeout;
+
+    // 초기화
+    (async () => {
+      await requireAuth();
+
+      // URL 파라미터 체크
+      const params = new URLSearchParams(location.search);
+      const specialty = params.get('specialty');
+      if (specialty) {
+        currentFilter = specialty;
+        document.querySelectorAll('.chip').forEach(c => {
+          c.classList.toggle('active', c.dataset.filter === specialty);
+        });
+      }
+
+      // 지역 셀렉트 채우기
+      const select = document.getElementById('region-select');
+      REGIONS.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r;
+        opt.textContent = r;
+        select.appendChild(opt);
+      });
+
+      loadAgents();
+    })();
+
+    function filterBy(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.chip').forEach(c => {
+        c.classList.toggle('active', c.dataset.filter === filter);
+      });
+      loadAgents();
+    }
+
+    function debounceSearch() {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(loadAgents, 300);
+    }
+
+    async function loadAgents() {
+      const container = document.getElementById('agents-list');
+      container.innerHTML = '<div class="spinner"></div>';
+
+      const filters = {};
+      if (currentFilter !== 'all') filters.specialty = currentFilter;
+
+      const search = document.getElementById('search-input').value.trim();
+      if (search) filters.search = search;
+
+      const region = document.getElementById('region-select').value;
+      if (region) filters.region_sido = region;
+
+      try {
+        const agents = await getAgents(filters);
+
+        if (agents.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <i class="ti ti-user-off"></i>
+              <p>검색 결과가 없습니다</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = agents.map(a => `
+          <div class="agent-card" onclick="showAgentDetail('${a.id}')">
+            <div class="agent-avatar">${(a.profiles?.name || '?')[0]}</div>
+            <div class="agent-info">
+              <div style="display:flex;align-items:center;gap:6px">
+                <span class="agent-name">${a.profiles?.name || '설계사'}</span>
+                ${a.is_premium ? '<span class="premium-badge">★ Premium</span>' : ''}
+              </div>
+              <div class="agent-company">${a.company || '소속 미등록'}</div>
+              <div class="agent-meta">
+                <span class="rating">
+                  <i class="ti ti-star-filled"></i> ${a.avg_rating?.toFixed(1) || '0.0'}
+                  <span style="color:var(--gray-400)">(${a.review_count || 0})</span>
+                </span>
+                <span><i class="ti ti-map-pin"></i> ${a.region_sido || '전국'}</span>
+                <span><i class="ti ti-clock"></i> ${a.experience_years || 0}년</span>
+              </div>
+              ${a.specialties?.length ? `
+                <div class="agent-specialty">
+                  ${a.specialties.slice(0, 4).map(s => `<span>${s}</span>`).join('')}
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        container.innerHTML = `<div class="empty-state"><p>오류가 발생했습니다</p></div>`;
+        console.error(err);
+      }
+    }
+
+    async function showAgentDetail(agentId) {
+      const modal = document.getElementById('agent-modal');
+      const content = document.getElementById('agent-detail-content');
+      content.innerHTML = '<div class="spinner"></div>';
+      modal.classList.add('show');
+
+      try {
+        const agent = await getAgentDetail(agentId);
+        const reviews = await getAgentReviews(agentId);
+
+        content.innerHTML = `
+          <div class="agent-detail-header">
+            <div class="agent-detail-avatar">${(agent.profiles?.name || '?')[0]}</div>
+            <h2 style="font-size:20px;font-weight:800">${agent.profiles?.name || '설계사'}</h2>
+            <p class="text-sm text-muted">${agent.company || '소속 미등록'} · ${agent.region_sido || '전국'}</p>
+            ${agent.is_premium ? '<span class="premium-badge mt-8" style="display:inline-flex">★ Premium 설계사</span>' : ''}
+          </div>
+
+          <div class="detail-info-grid">
+            <div class="detail-info-item">
+              <div class="label">경력</div>
+              <div class="value">${agent.experience_years || 0}년</div>
+            </div>
+            <div class="detail-info-item">
+              <div class="label">평점</div>
+              <div class="value" style="color:var(--warning)">
+                ★ ${agent.avg_rating?.toFixed(1) || '0.0'} <span style="font-weight:400;font-size:12px;color:var(--gray-400)">(${agent.review_count || 0}건)</span>
+              </div>
+            </div>
+            <div class="detail-info-item">
+              <div class="label">총 상담</div>
+              <div class="value">${agent.total_consultations || 0}건</div>
+            </div>
+            <div class="detail-info-item">
+              <div class="label">계약 체결</div>
+              <div class="value">${agent.total_contracts || 0}건</div>
+            </div>
+          </div>
+
+          ${agent.specialties?.length ? `
+            <div class="mb-16">
+              <div class="form-label">전문 분야</div>
+              <div class="chip-group">
+                ${agent.specialties.map(s => `<span class="chip active" style="cursor:default">${s}</span>`).join('')}
+              </div>
+            </div>
+          ` : ''}
+
+          ${agent.bio ? `
+            <div class="mb-16">
+              <div class="form-label">자기소개</div>
+              <p style="font-size:14px;color:var(--gray-700);line-height:1.7">${agent.bio}</p>
+            </div>
+          ` : ''}
+
+          <button class="btn btn-primary btn-block btn-lg mb-16"
+                  onclick="openRequestForm('${agent.id}', '${agent.profiles?.name || ''}')">
+            <i class="ti ti-message-plus"></i> 상담 요청하기
+          </button>
+
+          ${reviews.length > 0 ? `
+            <div class="form-label">리뷰 (${reviews.length}건)</div>
+            ${reviews.map(r => `
+              <div class="review-item">
+                <div class="review-header">
+                  <span style="font-weight:600;font-size:14px">${r.customers?.profiles?.name || '고객'}</span>
+                  <span class="review-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span>
+                </div>
+                ${r.content ? `<p style="font-size:13px;color:var(--gray-600)">${r.content}</p>` : ''}
+                <div class="text-sm text-muted mt-8">${timeAgo(r.created_at)}</div>
+              </div>
+            `).join('')}
+          ` : ''}
+
+          <button class="btn btn-outline btn-block mt-16" onclick="closeModal()">닫기</button>
+        `;
+      } catch (err) {
+        content.innerHTML = `<div class="empty-state"><p>정보를 불러올 수 없습니다</p></div>`;
+        console.error(err);
+      }
+    }
+
+    // 상담 요청 폼 열기
+    function openRequestForm(agentId, agentName) {
+      const content = document.getElementById('agent-detail-content');
+      content.innerHTML = `
+        <div class="modal-handle"></div>
+        <h3 style="font-size:18px;font-weight:700;margin-bottom:4px">${agentName} 설계사에게</h3>
+        <p class="text-sm text-muted mb-24">상담 요청 보내기</p>
+
+        <form onsubmit="submitRequest(event, '${agentId}')">
+          <div class="form-group">
+            <label class="form-label">관심 보험 종류</label>
+            <select class="form-input" id="req-type" required>
+              <option value="">선택하세요</option>
+              <option value="생명보험">생명보험</option>
+              <option value="건강보험">건강보험 (실손/암)</option>
+              <option value="자동차보험">자동차보험</option>
+              <option value="손해보험">손해보험</option>
+              <option value="연금보험">연금·저축보험</option>
+              <option value="기타">기타</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">요청 메시지</label>
+            <textarea class="form-input" id="req-message"
+                      placeholder="상담 받고 싶은 내용을 간단히 적어주세요 (예: 30대 직장인, 실손보험 갱신 고민 중입니다)"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">선호 연락 방식</label>
+            <div class="chip-group">
+              <label class="chip" onclick="this.querySelector('input').checked=true; document.querySelectorAll('[name=contact]').forEach(i=>i.parentElement.classList.remove('active')); this.classList.add('active')">
+                <input type="radio" name="contact" value="phone" style="display:none"> 전화
+              </label>
+              <label class="chip active" onclick="this.querySelector('input').checked=true; document.querySelectorAll('[name=contact]').forEach(i=>i.parentElement.classList.remove('active')); this.classList.add('active')">
+                <input type="radio" name="contact" value="chat" checked style="display:none"> 채팅
+              </label>
+              <label class="chip" onclick="this.querySelector('input').checked=true; document.querySelectorAll('[name=contact]').forEach(i=>i.parentElement.classList.remove('active')); this.classList.add('active')">
+                <input type="radio" name="contact" value="video" style="display:none"> 영상통화
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">선호 시간대</label>
+            <input type="text" class="form-input" id="req-time" placeholder="예: 평일 오후 2시~5시">
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block btn-lg" id="req-submit-btn">
+            <i class="ti ti-send"></i> 요청 보내기
+          </button>
+          <button type="button" class="btn btn-outline btn-block mt-8" onclick="showAgentDetail('${agentId}')">
+            돌아가기
+          </button>
+        </form>
+      `;
+    }
+
+    async function submitRequest(e, agentId) {
+      e.preventDefault();
+      const btn = document.getElementById('req-submit-btn');
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner" style="width:20px;height:20px;margin:0;border-width:2px"></div> 전송 중...';
+
+      try {
+        const contact = document.querySelector('[name=contact]:checked')?.value || 'chat';
+        await createMatchingRequest(agentId, {
+          insurance_type: document.getElementById('req-type').value,
+          message: document.getElementById('req-message').value,
+          preferred_contact: contact,
+          preferred_time: document.getElementById('req-time').value
+        });
+
+        closeModal();
+        showToast('상담 요청이 전송되었습니다!');
+      } catch (err) {
+        showToast(err.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ti ti-send"></i> 요청 보내기';
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('agent-modal').classList.remove('show');
+    }
+
+    // 모달 배경 클릭으로 닫기
+    document.getElementById('agent-modal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeModal();
+    });
+  </script>
+</body>
+</html>

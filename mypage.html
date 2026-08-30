@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <title>인슈비 — 마이페이지</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+  <style>
+    .profile-header {
+      text-align: center;
+      padding: 24px 0;
+      margin-bottom: 16px;
+    }
+    .profile-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: var(--primary-light);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 30px;
+      font-weight: 800;
+      margin: 0 auto 12px;
+    }
+    .profile-name { font-size: 22px; font-weight: 800; }
+    .profile-role {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 6px;
+    }
+    .role-customer { background: var(--primary-light); color: var(--primary); }
+    .role-agent { background: #D1FAE5; color: #065F46; }
+    .menu-list { margin-top: 8px; }
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--gray-100);
+      cursor: pointer;
+      color: var(--gray-700);
+      text-decoration: none;
+      font-size: 15px;
+    }
+    .menu-item i { font-size: 20px; color: var(--gray-500); width: 24px; text-align: center; }
+    .menu-item .arrow { margin-left: auto; color: var(--gray-400); font-size: 16px; }
+    .menu-item:hover { color: var(--primary); }
+    .specialty-toggle {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .specialty-toggle .chip { font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <div class="app-header">
+      <a href="/dashboard.html" style="color:var(--gray-600);font-size:22px;text-decoration:none">
+        <i class="ti ti-arrow-left"></i>
+      </a>
+      <span style="font-weight:700;font-size:17px">마이페이지</span>
+      <div style="width:22px"></div>
+    </div>
+
+    <div class="page-content">
+      <div id="loading" class="spinner"></div>
+      <div id="content" class="hidden">
+        <!-- 프로필 헤더 -->
+        <div class="profile-header">
+          <div class="profile-avatar" id="avatar"></div>
+          <div class="profile-name" id="user-name"></div>
+          <span class="profile-role" id="user-role"></span>
+          <div class="text-sm text-muted mt-8" id="user-email"></div>
+        </div>
+
+        <!-- 고객용 프로필 편집 -->
+        <div id="customer-profile" class="hidden">
+          <div class="section-title">내 정보 수정</div>
+          <form onsubmit="saveCustomerProfile(event)">
+            <div class="form-group">
+              <label class="form-label">거주 지역</label>
+              <select class="form-input" id="c-region"></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">관심 보험 분야</label>
+              <div class="specialty-toggle" id="c-interests"></div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block" id="c-save-btn">저장</button>
+          </form>
+        </div>
+
+        <!-- 설계사용 프로필 편집 -->
+        <div id="agent-profile" class="hidden">
+          <div class="section-title">설계사 프로필 수정</div>
+          <form onsubmit="saveAgentProfile(event)">
+            <div class="form-group">
+              <label class="form-label">소속 보험사/GA</label>
+              <input type="text" class="form-input" id="a-company" placeholder="소속 회사명">
+            </div>
+            <div class="form-group">
+              <label class="form-label">등록번호</label>
+              <input type="text" class="form-input" id="a-license" placeholder="보험설계사 등록번호">
+            </div>
+            <div class="form-group">
+              <label class="form-label">경력 (년)</label>
+              <input type="number" class="form-input" id="a-experience" min="0" placeholder="0">
+            </div>
+            <div class="form-group">
+              <label class="form-label">활동 지역</label>
+              <select class="form-input" id="a-region"></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">전문 분야</label>
+              <div class="specialty-toggle" id="a-specialties"></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">자기소개</label>
+              <textarea class="form-input" id="a-bio" placeholder="고객에게 보여질 자기소개를 작성해주세요"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block" id="a-save-btn">저장</button>
+          </form>
+        </div>
+
+        <!-- 공통 메뉴 -->
+        <div class="menu-list mt-24">
+          <a class="menu-item" href="/terms.html">
+            <i class="ti ti-file-text"></i> 이용약관 <i class="ti ti-chevron-right arrow"></i>
+          </a>
+          <a class="menu-item" href="/privacy.html">
+            <i class="ti ti-lock"></i> 개인정보처리방침 <i class="ti ti-chevron-right arrow"></i>
+          </a>
+          <div class="menu-item" onclick="signOut()" style="color:var(--danger)">
+            <i class="ti ti-logout" style="color:var(--danger)"></i> 로그아웃
+          </div>
+        </div>
+
+        <p class="text-center text-sm text-muted mt-24">인슈비 v1.0 · © 2026 원니원주식회사</p>
+      </div>
+    </div>
+
+    <div class="bottom-nav">
+      <a href="/dashboard.html" class="nav-item"><i class="ti ti-home"></i>홈</a>
+      <a href="/agents.html" class="nav-item"><i class="ti ti-search"></i>설계사</a>
+      <a href="/my-requests.html" class="nav-item"><i class="ti ti-message-circle"></i>상담</a>
+      <a href="/notifications.html" class="nav-item"><i class="ti ti-bell"></i>알림</a>
+      <a href="/mypage.html" class="nav-item active"><i class="ti ti-user"></i>마이</a>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+  <script>
+    const SPECIALTIES = ['생명보험','건강보험','손해보험','자동차보험','연금보험','화재보험','배상책임','여행자보험','펫보험'];
+
+    let currentProfile = null;
+
+    (async () => {
+      const user = await requireAuth();
+      if (!user) return;
+
+      currentProfile = await getCurrentProfile();
+      if (!currentProfile) return;
+
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('content').classList.remove('hidden');
+
+      document.getElementById('avatar').textContent = (currentProfile.name || '?')[0];
+      document.getElementById('user-name').textContent = currentProfile.name;
+      document.getElementById('user-email').textContent = currentProfile.email;
+
+      const roleEl = document.getElementById('user-role');
+      if (currentProfile.role === 'customer') {
+        roleEl.textContent = '일반 고객';
+        roleEl.className = 'profile-role role-customer';
+        initCustomerProfile();
+      } else if (currentProfile.role === 'agent') {
+        roleEl.textContent = '보험설계사';
+        roleEl.className = 'profile-role role-agent';
+        initAgentProfile();
+      }
+    })();
+
+    function buildRegionSelect(selectId, selected) {
+      const sel = document.getElementById(selectId);
+      sel.innerHTML = '<option value="">선택하세요</option>';
+      REGIONS.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r;
+        opt.textContent = r;
+        if (r === selected) opt.selected = true;
+        sel.appendChild(opt);
+      });
+    }
+
+    function buildSpecialtyChips(containerId, selected = []) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = SPECIALTIES.map(s => `
+        <div class="chip ${selected.includes(s) ? 'active' : ''}"
+             onclick="this.classList.toggle('active')"
+             data-value="${s}">${s}</div>
+      `).join('');
+    }
+
+    function getSelectedSpecialties(containerId) {
+      return Array.from(document.querySelectorAll(`#${containerId} .chip.active`))
+        .map(el => el.dataset.value);
+    }
+
+    async function initCustomerProfile() {
+      document.getElementById('customer-profile').classList.remove('hidden');
+
+      const { data: customer } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('user_id', currentProfile.id)
+        .single();
+
+      buildRegionSelect('c-region', customer?.region_sido);
+      buildSpecialtyChips('c-interests', customer?.interests || []);
+    }
+
+    async function saveCustomerProfile(e) {
+      e.preventDefault();
+      const btn = document.getElementById('c-save-btn');
+      btn.disabled = true;
+      btn.textContent = '저장 중...';
+
+      try {
+        await upsertCustomerProfile({
+          region_sido: document.getElementById('c-region').value,
+          interests: getSelectedSpecialties('c-interests')
+        });
+        showToast('프로필이 저장되었습니다');
+      } catch (err) {
+        showToast('저장 실패: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '저장';
+      }
+    }
+
+    async function initAgentProfile() {
+      document.getElementById('agent-profile').classList.remove('hidden');
+
+      const { data: agent } = await supabase
+        .from('agents')
+        .select('*')
+        .eq('user_id', currentProfile.id)
+        .single();
+
+      if (agent) {
+        document.getElementById('a-company').value = agent.company || '';
+        document.getElementById('a-license').value = agent.license_number || '';
+        document.getElementById('a-experience').value = agent.experience_years || 0;
+        document.getElementById('a-bio').value = agent.bio || '';
+      }
+
+      buildRegionSelect('a-region', agent?.region_sido);
+      buildSpecialtyChips('a-specialties', agent?.specialties || []);
+    }
+
+    async function saveAgentProfile(e) {
+      e.preventDefault();
+      const btn = document.getElementById('a-save-btn');
+      btn.disabled = true;
+      btn.textContent = '저장 중...';
+
+      try {
+        await upsertAgentProfile({
+          company: document.getElementById('a-company').value,
+          license_number: document.getElementById('a-license').value,
+          experience_years: parseInt(document.getElementById('a-experience').value) || 0,
+          region_sido: document.getElementById('a-region').value,
+          specialties: getSelectedSpecialties('a-specialties'),
+          bio: document.getElementById('a-bio').value
+        });
+        showToast('프로필이 저장되었습니다');
+      } catch (err) {
+        showToast('저장 실패: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '저장';
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <title>인슈비 — 알림</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+</head>
+<body>
+  <div class="app-container">
+    <div class="app-header">
+      <a href="/dashboard.html" style="color:var(--gray-600);font-size:22px;text-decoration:none">
+        <i class="ti ti-arrow-left"></i>
+      </a>
+      <span style="font-weight:700;font-size:17px">알림</span>
+      <button class="icon-btn" onclick="readAll()" title="모두 읽음">
+        <i class="ti ti-checks"></i>
+      </button>
+    </div>
+
+    <div class="page-content">
+      <div id="notif-list">
+        <div class="spinner"></div>
+      </div>
+    </div>
+
+    <div class="bottom-nav">
+      <a href="/dashboard.html" class="nav-item"><i class="ti ti-home"></i>홈</a>
+      <a href="/agents.html" class="nav-item"><i class="ti ti-search"></i>설계사</a>
+      <a href="/my-requests.html" class="nav-item"><i class="ti ti-message-circle"></i>상담</a>
+      <a href="/notifications.html" class="nav-item active"><i class="ti ti-bell"></i>알림</a>
+      <a href="/mypage.html" class="nav-item"><i class="ti ti-user"></i>마이</a>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+  <script>
+    (async () => {
+      const user = await requireAuth();
+      if (!user) return;
+      await loadNotifications();
+
+      subscribeToNotifications(user.id, () => loadNotifications());
+    })();
+
+    async function loadNotifications() {
+      const notifs = await getNotifications();
+      const container = document.getElementById('notif-list');
+
+      if (notifs.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <i class="ti ti-bell-off"></i>
+            <p>알림이 없습니다</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = notifs.map(n => {
+        let iconClass = 'system';
+        let icon = 'ti-bell';
+        if (n.type === 'matching_request') { iconClass = 'match'; icon = 'ti-message-plus'; }
+        else if (n.type === 'request_accepted') { iconClass = 'accept'; icon = 'ti-check'; }
+        else if (n.type === 'request_rejected') { iconClass = 'system'; icon = 'ti-x'; }
+        else if (n.type === 'new_review') { iconClass = 'accept'; icon = 'ti-star'; }
+
+        return `
+          <div class="notif-item ${n.is_read ? '' : 'unread'}" onclick="handleNotifClick('${n.id}', '${n.type}')">
+            <div class="notif-icon ${iconClass}">
+              <i class="ti ${icon}"></i>
+            </div>
+            <div class="notif-content">
+              <div class="notif-title">${n.title}</div>
+              ${n.body ? `<div class="notif-body">${n.body}</div>` : ''}
+              <div class="notif-time">${timeAgo(n.created_at)}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function handleNotifClick(notifId, type) {
+      await markNotificationRead(notifId);
+
+      if (type === 'matching_request') {
+        location.href = '/received-requests.html';
+      } else if (['request_accepted', 'request_rejected'].includes(type)) {
+        location.href = '/my-requests.html';
+      } else {
+        await loadNotifications();
+      }
+    }
+
+    async function readAll() {
+      await markAllNotificationsRead();
+      showToast('모든 알림을 읽음 처리했습니다');
+      await loadNotifications();
+    }
+  </script>
+</body>
+</html>

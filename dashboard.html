@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <title>인슈비 — 홈</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+  <style>
+    .hero-banner {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: #fff;
+      border-radius: var(--radius);
+      padding: 24px 20px;
+      margin-bottom: 20px;
+    }
+    .hero-banner h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .hero-banner p { font-size: 14px; opacity: .85; margin-bottom: 16px; }
+    .hero-banner .btn {
+      background: #fff;
+      color: var(--primary);
+      font-weight: 700;
+    }
+    .quick-menu {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .quick-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 14px 8px;
+      background: var(--gray-50);
+      border-radius: var(--radius);
+      text-decoration: none;
+      color: var(--gray-700);
+      font-size: 12px;
+      font-weight: 600;
+      transition: background .2s;
+    }
+    .quick-item:hover { background: var(--gray-100); }
+    .quick-item i { font-size: 24px; color: var(--primary); }
+    .stat-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      text-align: center;
+    }
+    .stat-card .num {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--primary);
+    }
+    .stat-card .label {
+      font-size: 12px;
+      color: var(--gray-500);
+      margin-top: 2px;
+    }
+    .recent-section { margin-bottom: 24px; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <div class="app-header">
+      <a href="/dashboard.html" class="logo">인슈<span>비</span></a>
+      <div class="header-actions">
+        <button class="icon-btn" onclick="location.href='/notifications.html'" id="notif-btn">
+          <i class="ti ti-bell"></i>
+        </button>
+        <button class="icon-btn" onclick="location.href='/mypage.html'">
+          <i class="ti ti-user"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="page-content">
+      <div id="loading" class="spinner"></div>
+      <div id="content" class="hidden">
+        <!-- 고객용 대시보드 -->
+        <div id="customer-dashboard" class="hidden">
+          <div class="hero-banner">
+            <h2 id="greeting"></h2>
+            <p>나에게 딱 맞는 보험설계사를 찾아보세요</p>
+            <a href="/agents.html" class="btn btn-sm">설계사 찾기 →</a>
+          </div>
+
+          <div class="quick-menu">
+            <a href="/agents.html" class="quick-item">
+              <i class="ti ti-search"></i>설계사 검색
+            </a>
+            <a href="/agents.html?specialty=건강보험" class="quick-item">
+              <i class="ti ti-heart-rate-monitor"></i>건강보험
+            </a>
+            <a href="/agents.html?specialty=자동차보험" class="quick-item">
+              <i class="ti ti-car"></i>자동차보험
+            </a>
+            <a href="/agents.html?specialty=연금보험" class="quick-item">
+              <i class="ti ti-pig-money"></i>연금·저축
+            </a>
+          </div>
+
+          <div class="section-title">내 상담 현황</div>
+          <div class="stat-row" id="customer-stats">
+            <div class="stat-card">
+              <div class="num" id="stat-pending">0</div>
+              <div class="label">대기중</div>
+            </div>
+            <div class="stat-card">
+              <div class="num" id="stat-progress">0</div>
+              <div class="label">진행중</div>
+            </div>
+            <div class="stat-card">
+              <div class="num" id="stat-completed">0</div>
+              <div class="label">완료</div>
+            </div>
+          </div>
+
+          <div class="recent-section">
+            <div class="flex-between mb-16">
+              <div class="section-title" style="margin:0">최근 요청</div>
+              <a href="/my-requests.html" style="color:var(--primary);font-size:13px;text-decoration:none">전체보기</a>
+            </div>
+            <div id="recent-requests"></div>
+          </div>
+        </div>
+
+        <!-- 설계사용 대시보드 -->
+        <div id="agent-dashboard" class="hidden">
+          <div class="hero-banner" style="background:linear-gradient(135deg,#059669,#0EA5E9)">
+            <h2 id="agent-greeting"></h2>
+            <p>새로운 고객 요청을 확인하세요</p>
+            <a href="/received-requests.html" class="btn btn-sm" style="color:#059669">요청 확인 →</a>
+          </div>
+
+          <div class="stat-row" id="agent-stats">
+            <div class="stat-card">
+              <div class="num" id="astat-new">0</div>
+              <div class="label">새 요청</div>
+            </div>
+            <div class="stat-card">
+              <div class="num" id="astat-consult">0</div>
+              <div class="label">총 상담</div>
+            </div>
+            <div class="stat-card">
+              <div class="num" id="astat-rating">0.0</div>
+              <div class="label">평점</div>
+            </div>
+          </div>
+
+          <div class="quick-menu">
+            <a href="/received-requests.html" class="quick-item">
+              <i class="ti ti-mail"></i>받은 요청
+            </a>
+            <a href="/mypage.html" class="quick-item">
+              <i class="ti ti-id"></i>내 프로필
+            </a>
+            <a href="/notifications.html" class="quick-item">
+              <i class="ti ti-bell"></i>알림
+            </a>
+            <a href="#" class="quick-item" onclick="signOut()">
+              <i class="ti ti-logout"></i>로그아웃
+            </a>
+          </div>
+
+          <div class="recent-section">
+            <div class="flex-between mb-16">
+              <div class="section-title" style="margin:0">최근 받은 요청</div>
+              <a href="/received-requests.html" style="color:var(--primary);font-size:13px;text-decoration:none">전체보기</a>
+            </div>
+            <div id="agent-recent-requests"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Nav -->
+    <div class="bottom-nav" id="bottom-nav">
+      <a href="/dashboard.html" class="nav-item active">
+        <i class="ti ti-home"></i>홈
+      </a>
+      <a href="/agents.html" class="nav-item" id="nav-agents">
+        <i class="ti ti-search"></i>설계사
+      </a>
+      <a href="/my-requests.html" class="nav-item" id="nav-requests">
+        <i class="ti ti-message-circle"></i>상담
+      </a>
+      <a href="/notifications.html" class="nav-item">
+        <i class="ti ti-bell"></i>알림
+      </a>
+      <a href="/mypage.html" class="nav-item">
+        <i class="ti ti-user"></i>마이
+      </a>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+  <script>
+    (async () => {
+      const user = await requireAuth();
+      if (!user) return;
+
+      const profile = await getCurrentProfile();
+      if (!profile) return;
+
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('content').classList.remove('hidden');
+
+      // 알림 배지
+      const unread = await getUnreadCount();
+      if (unread > 0) {
+        document.getElementById('notif-btn').innerHTML = `
+          <i class="ti ti-bell"></i><span class="badge-dot"></span>
+        `;
+      }
+
+      if (profile.role === 'customer') {
+        document.getElementById('customer-dashboard').classList.remove('hidden');
+        document.getElementById('greeting').textContent = `${profile.name}님, 안녕하세요!`;
+        loadCustomerDashboard();
+      } else if (profile.role === 'agent') {
+        document.getElementById('agent-dashboard').classList.remove('hidden');
+        document.getElementById('agent-greeting').textContent = `${profile.name} 설계사님!`;
+        // 설계사는 "받은 요청"으로 nav 변경
+        document.getElementById('nav-agents').innerHTML = '<i class="ti ti-chart-bar"></i>현황';
+        document.getElementById('nav-requests').href = '/received-requests.html';
+        document.getElementById('nav-requests').innerHTML = '<i class="ti ti-mail"></i>받은요청';
+        loadAgentDashboard();
+      }
+
+      // Realtime 알림 구독
+      subscribeToNotifications(user.id, (notif) => {
+        document.getElementById('notif-btn').innerHTML = `
+          <i class="ti ti-bell"></i><span class="badge-dot"></span>
+        `;
+        showToast(notif.title);
+      });
+    })();
+
+    async function loadCustomerDashboard() {
+      try {
+        const requests = await getMyRequests();
+        const pending = requests.filter(r => r.status === 'pending').length;
+        const progress = requests.filter(r => ['accepted','in_progress'].includes(r.status)).length;
+        const completed = requests.filter(r => r.status === 'completed').length;
+
+        document.getElementById('stat-pending').textContent = pending;
+        document.getElementById('stat-progress').textContent = progress;
+        document.getElementById('stat-completed').textContent = completed;
+
+        const container = document.getElementById('recent-requests');
+        const recent = requests.slice(0, 3);
+        if (recent.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <i class="ti ti-message-off"></i>
+              <p>아직 상담 요청이 없습니다</p>
+              <a href="/agents.html" class="btn btn-secondary btn-sm mt-16">설계사 찾아보기</a>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = recent.map(r => `
+          <div class="card" onclick="location.href='/my-requests.html'">
+            <div class="flex-between">
+              <div>
+                <div style="font-weight:700;font-size:15px">${r.agents.profiles.name} 설계사</div>
+                <div class="text-sm text-muted">${r.agents.company || ''} · ${r.insurance_type || '보험상담'}</div>
+              </div>
+              <span class="status ${getStatusClass(r.status)}">${getStatusLabel(r.status)}</span>
+            </div>
+            <div class="text-sm text-muted mt-8">${timeAgo(r.created_at)}</div>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function loadAgentDashboard() {
+      try {
+        const requests = await getReceivedRequests();
+        const newReqs = requests.filter(r => r.status === 'pending').length;
+
+        // 설계사 정보
+        const user = await getCurrentUser();
+        const { data: agent } = await supabase
+          .from('agents')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        document.getElementById('astat-new').textContent = newReqs;
+        document.getElementById('astat-consult').textContent = agent?.total_consultations || 0;
+        document.getElementById('astat-rating').textContent = agent?.avg_rating?.toFixed(1) || '0.0';
+
+        const container = document.getElementById('agent-recent-requests');
+        const recent = requests.filter(r => r.status === 'pending').slice(0, 3);
+        if (recent.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <i class="ti ti-inbox"></i>
+              <p>새로운 상담 요청이 없습니다</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = recent.map(r => `
+          <div class="card" onclick="location.href='/received-requests.html'">
+            <div class="flex-between">
+              <div>
+                <div style="font-weight:700;font-size:15px">${r.customers.profiles.name} 고객</div>
+                <div class="text-sm text-muted">${r.insurance_type || '보험상담'} · ${r.customers.region_sido || ''}</div>
+              </div>
+              <span class="status status-pending">새 요청</span>
+            </div>
+            ${r.message ? `<div class="text-sm mt-8" style="color:var(--gray-600)">"${r.message.slice(0, 60)}${r.message.length > 60 ? '...' : ''}"</div>` : ''}
+            <div class="text-sm text-muted mt-8">${timeAgo(r.created_at)}</div>
+          </div>
+        `).join('');
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  </script>
+</body>
+</html>
