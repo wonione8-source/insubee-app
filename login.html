@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>로그인 — 인슈비</title>
+<meta name="description" content="인슈비 로그인 및 회원가입" />
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap');
+  :root {
+    --ink: #141B2D; --navy: #1E2E52; --navy-2: #2E4370;
+    --honey: #F2A900; --honey-deep: #D89400; --honey-pale: #FFF6DE;
+    --bg: #F5F6F9; --mist: #E7EAF1; --sub: #6B7280;
+    --danger: #EF4444; --success: #22C55E;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'IBM Plex Sans KR','Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif; color: var(--ink); background: var(--bg); line-height: 1.6; -webkit-font-smoothing: antialiased; min-height: 100vh; display: flex; flex-direction: column; }
+  a { text-decoration: none; color: inherit; }
+
+  /* 헤더 */
+  header { background: #fff; border-bottom: 1px solid var(--mist); }
+  .nav { max-width: 1080px; margin: 0 auto; padding: 0 22px; display: flex; align-items: center; justify-content: space-between; height: 62px; }
+  .logo { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 19px; letter-spacing: -0.02em; }
+  .hex-mark { width: 27px; height: 30px; background: var(--honey); clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%); display: flex; align-items: center; justify-content: center; color: var(--ink); font-weight: 800; font-size: 13px; }
+
+  /* 메인 */
+  .auth-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 22px; }
+  .auth-card { background: #fff; border-radius: 22px; border: 1px solid var(--mist); padding: 40px 36px; width: 100%; max-width: 420px; box-shadow: 0 4px 20px rgba(20,27,45,0.06); }
+  .auth-card h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.03em; text-align: center; margin-bottom: 6px; }
+  .auth-card .sub-text { text-align: center; font-size: 13.5px; color: var(--sub); margin-bottom: 28px; }
+
+  /* 탭 */
+  .tabs { display: flex; gap: 4px; margin-bottom: 24px; background: var(--bg); border-radius: 12px; padding: 4px; }
+  .tab { flex: 1; padding: 10px; border: none; background: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; color: var(--sub); transition: all 0.2s; font-family: inherit; }
+  .tab.active { background: #fff; color: var(--ink); box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+
+  /* 폼 */
+  .form-section { display: none; }
+  .form-section.active { display: block; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12.5px; font-weight: 700; color: var(--sub); margin-bottom: 6px; }
+  .field label em { color: var(--danger); font-style: normal; }
+  .field input, .field select {
+    width: 100%; border: 1px solid var(--mist); border-radius: 11px;
+    padding: 13px 14px; font-size: 14px; background: var(--bg); color: var(--ink); font-family: inherit;
+  }
+  .field input:focus, .field select:focus { border-color: var(--honey); outline: none; background: #fff; }
+  .field input::placeholder { color: #B0B7C3; }
+
+  /* 회원유형 선택 */
+  .role-select { display: flex; gap: 10px; margin-bottom: 18px; }
+  .role-btn {
+    flex: 1; padding: 14px; border: 2px solid var(--mist); border-radius: 14px;
+    background: #fff; cursor: pointer; text-align: center; transition: all 0.2s; font-family: inherit;
+  }
+  .role-btn:hover { border-color: var(--honey); }
+  .role-btn.selected { border-color: var(--honey); background: var(--honey-pale); }
+  .role-btn .icon { font-size: 24px; margin-bottom: 4px; }
+  .role-btn .label { font-size: 14px; font-weight: 700; }
+  .role-btn .desc { font-size: 11px; color: var(--sub); margin-top: 2px; }
+
+  /* 약관 동의 */
+  .agree-section { margin: 18px 0; }
+  .agree-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+  .agree-row input[type="checkbox"] { margin-top: 3px; accent-color: var(--honey); }
+  .agree-row label { font-size: 12.5px; color: var(--sub); cursor: pointer; }
+  .agree-row label a { color: var(--honey-deep); font-weight: 600; }
+  .agree-all { font-weight: 700; color: var(--ink); font-size: 13.5px; }
+
+  /* 버튼 */
+  .btn-submit {
+    width: 100%; background: var(--honey); color: var(--ink); border: none; border-radius: 13px;
+    padding: 15px 0; font-size: 15.5px; font-weight: 800; cursor: pointer;
+    transition: transform 0.15s, opacity 0.2s; font-family: inherit;
+  }
+  .btn-submit:hover { transform: translateY(-1px); }
+  .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; color: var(--sub); font-size: 12px; }
+  .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--mist); }
+
+  .social-btns { display: flex; gap: 10px; }
+  .social-btn {
+    flex: 1; padding: 12px; border-radius: 11px; border: 1px solid var(--mist);
+    cursor: pointer; font-size: 13px; font-weight: 700; font-family: inherit;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: background 0.2s;
+  }
+  .social-btn.kakao { background: #FEE500; border-color: #FEE500; color: #191919; }
+  .social-btn.kakao:hover { background: #FDDC3F; }
+  .social-btn.google { background: #fff; color: #333; }
+  .social-btn.google:hover { background: var(--bg); }
+
+  /* 메시지 */
+  .msg { padding: 12px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 16px; display: none; }
+  .msg.error { background: #FEF2F2; color: var(--danger); border: 1px solid #FECACA; }
+  .msg.success { background: #F0FDF4; color: #16A34A; border: 1px solid #BBF7D0; }
+  .msg.show { display: block; }
+
+  .forgot { text-align: center; margin-top: 14px; }
+  .forgot a { font-size: 12.5px; color: var(--honey-deep); font-weight: 600; }
+
+  /* 푸터 */
+  footer { padding: 20px 0; text-align: center; }
+  footer p { font-size: 11px; color: #9AA1AE; }
+
+  @media (max-width: 480px) {
+    .auth-card { padding: 32px 22px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <a href="/" class="logo"><span class="hex-mark">비</span>인슈비</a>
+    <a href="/" style="font-size:13.5px;font-weight:600;color:var(--sub)">← 메인으로</a>
+  </div>
+</header>
+
+<div class="auth-wrap">
+  <div class="auth-card">
+    <h1>🐝 인슈비</h1>
+    <p class="sub-text">보험 전문가와 고객을 연결합니다</p>
+
+    <!-- 탭 -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('login')">로그인</button>
+      <button class="tab" onclick="switchTab('signup')">회원가입</button>
+    </div>
+
+    <!-- 에러/성공 메시지 -->
+    <div id="msg" class="msg"></div>
+
+    <!-- 로그인 폼 -->
+    <div id="loginForm" class="form-section active">
+      <div class="field">
+        <label>이메일 <em>*</em></label>
+        <input type="email" id="loginEmail" placeholder="example@email.com" />
+      </div>
+      <div class="field">
+        <label>비밀번호 <em>*</em></label>
+        <input type="password" id="loginPw" placeholder="비밀번호 입력" />
+      </div>
+      <button class="btn-submit" onclick="handleLogin()">로그인</button>
+      <div class="forgot"><a href="#" onclick="handleReset(event)">비밀번호를 잊으셨나요?</a></div>
+      <div class="divider">또는</div>
+      <div class="social-btns">
+        <button class="social-btn kakao" onclick="handleSocial('kakao')">💬 카카오</button>
+        <button class="social-btn google" onclick="handleSocial('google')">G Google</button>
+      </div>
+    </div>
+
+    <!-- 회원가입 폼 -->
+    <div id="signupForm" class="form-section">
+      <!-- 회원 유형 선택 -->
+      <div class="role-select">
+        <button class="role-btn selected" onclick="selectRole(this,'planner')" data-role="planner">
+          <div class="icon">🐝</div>
+          <div class="label">설계사</div>
+          <div class="desc">프로필 등록 &amp; 고객 매칭</div>
+        </button>
+        <button class="role-btn" onclick="selectRole(this,'customer')" data-role="customer">
+          <div class="icon">👤</div>
+          <div class="label">고객</div>
+          <div class="desc">설계사 검색 &amp; 상담 신청</div>
+        </button>
+      </div>
+
+      <div class="field">
+        <label>이름 <em>*</em></label>
+        <input type="text" id="signupName" placeholder="실명 입력" />
+      </div>
+      <div class="field">
+        <label>이메일 <em>*</em></label>
+        <input type="email" id="signupEmail" placeholder="example@email.com" />
+      </div>
+      <div class="field">
+        <label>비밀번호 <em>*</em> <span style="font-weight:400;color:var(--sub)">(8자 이상)</span></label>
+        <input type="password" id="signupPw" placeholder="비밀번호 입력" />
+      </div>
+      <div class="field">
+        <label>비밀번호 확인 <em>*</em></label>
+        <input type="password" id="signupPwConfirm" placeholder="비밀번호 다시 입력" />
+      </div>
+      <div class="field">
+        <label>연락처 <em>*</em></label>
+        <input type="tel" id="signupPhone" placeholder="010-0000-0000" />
+      </div>
+
+      <!-- 설계사 전용 필드 -->
+      <div id="plannerFields">
+        <div class="field">
+          <label>소속사</label>
+          <input type="text" id="signupCompany" placeholder="소속 보험사 또는 GA" />
+        </div>
+        <div class="field">
+          <label>전문분야</label>
+          <select id="signupSpecialty">
+            <option value="">선택해주세요</option>
+            <option value="건강·암">건강·암보험</option>
+            <option value="종신·사망">종신·사망보험</option>
+            <option value="연금·저축">연금·저축보험</option>
+            <option value="어린이·태아">어린이·태아보험</option>
+            <option value="화재·재물">화재·재물보험</option>
+            <option value="자동차">자동차보험</option>
+            <option value="기업·단체">기업·단체보험</option>
+            <option value="기타">기타</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 약관 동의 -->
+      <div class="agree-section">
+        <div class="agree-row">
+          <input type="checkbox" id="agreeAll" onchange="toggleAll(this)" />
+          <label for="agreeAll" class="agree-all">전체 동의</label>
+        </div>
+        <div class="agree-row">
+          <input type="checkbox" id="agreeTerms" class="agree-item" />
+          <label for="agreeTerms"><a href="/terms.html" target="_blank">[필수] 이용약관</a> 동의</label>
+        </div>
+        <div class="agree-row">
+          <input type="checkbox" id="agreePrivacy" class="agree-item" />
+          <label for="agreePrivacy"><a href="/privacy.html" target="_blank">[필수] 개인정보처리방침</a> 동의</label>
+        </div>
+        <div class="agree-row">
+          <input type="checkbox" id="agreeMarketing" class="agree-item" />
+          <label for="agreeMarketing">[선택] 마케팅 정보 수신 동의</label>
+        </div>
+      </div>
+
+      <button class="btn-submit" onclick="handleSignup()">가입하기</button>
+      <div class="divider">또는</div>
+      <div class="social-btns">
+        <button class="social-btn kakao" onclick="handleSocial('kakao')">💬 카카오로 시작</button>
+        <button class="social-btn google" onclick="handleSocial('google')">G Google로 시작</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>© 2026 InsuBee. All rights reserved. | <a href="/privacy.html" style="color:var(--honey-deep)">개인정보처리방침</a> · <a href="/terms.html" style="color:var(--honey-deep)">이용약관</a></p>
+</footer>
+
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // ⚠️ 아래 값을 실제 Supabase 프로젝트 정보로 교체하세요
+  const SUPABASE_URL = 'https://dfzhjqychbodpdwdkdab.supabase.co';
+  const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY_HERE'; // Supabase → Settings → API → anon public key
+
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let selectedRole = 'planner';
+
+  // 탭 전환
+  function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.form-section').forEach(f => f.classList.remove('active'));
+    if (tab === 'login') {
+      document.querySelectorAll('.tab')[0].classList.add('active');
+      document.getElementById('loginForm').classList.add('active');
+    } else {
+      document.querySelectorAll('.tab')[1].classList.add('active');
+      document.getElementById('signupForm').classList.add('active');
+    }
+    hideMsg();
+  }
+
+  // 회원 유형 선택
+  function selectRole(btn, role) {
+    document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedRole = role;
+    document.getElementById('plannerFields').style.display = role === 'planner' ? 'block' : 'none';
+  }
+
+  // 전체 동의
+  function toggleAll(el) {
+    document.querySelectorAll('.agree-item').forEach(c => c.checked = el.checked);
+  }
+
+  // 메시지 표시
+  function showMsg(text, type) {
+    const msg = document.getElementById('msg');
+    msg.textContent = text;
+    msg.className = 'msg ' + type + ' show';
+  }
+  function hideMsg() {
+    document.getElementById('msg').className = 'msg';
+  }
+
+  // 로그인
+  async function handleLogin() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const pw = document.getElementById('loginPw').value;
+    if (!email || !pw) return showMsg('이메일과 비밀번호를 입력해주세요.', 'error');
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password: pw });
+      if (error) throw error;
+      showMsg('로그인 성공! 메인으로 이동합니다.', 'success');
+      setTimeout(() => location.href = '/', 1500);
+    } catch (e) {
+      showMsg('로그인 실패: 이메일 또는 비밀번호를 확인해주세요.', 'error');
+    }
+  }
+
+  // 회원가입
+  async function handleSignup() {
+    const name = document.getElementById('signupName').value.trim();
+    const email = document.getElementById('signupEmail').value.trim();
+    const pw = document.getElementById('signupPw').value;
+    const pwConfirm = document.getElementById('signupPwConfirm').value;
+    const phone = document.getElementById('signupPhone').value.trim();
+
+    if (!name || !email || !pw || !phone) return showMsg('필수 항목을 모두 입력해주세요.', 'error');
+    if (pw.length < 8) return showMsg('비밀번호는 8자 이상이어야 합니다.', 'error');
+    if (pw !== pwConfirm) return showMsg('비밀번호가 일치하지 않습니다.', 'error');
+    if (!document.getElementById('agreeTerms').checked || !document.getElementById('agreePrivacy').checked) {
+      return showMsg('필수 약관에 동의해주세요.', 'error');
+    }
+
+    const metadata = {
+      full_name: name,
+      phone: phone,
+      role: selectedRole,
+      marketing_agreed: document.getElementById('agreeMarketing').checked,
+    };
+    if (selectedRole === 'planner') {
+      metadata.company = document.getElementById('signupCompany').value.trim();
+      metadata.specialty = document.getElementById('signupSpecialty').value;
+    }
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password: pw,
+        options: { data: metadata }
+      });
+      if (error) throw error;
+      showMsg('🎉 가입 완료! 이메일 인증 링크를 확인해주세요.', 'success');
+    } catch (e) {
+      if (e.message && e.message.includes('already')) {
+        showMsg('이미 가입된 이메일입니다. 로그인해주세요.', 'error');
+      } else {
+        showMsg('가입 실패: ' + (e.message || '다시 시도해주세요.'), 'error');
+      }
+    }
+  }
+
+  // 비밀번호 재설정
+  async function handleReset(e) {
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value.trim();
+    if (!email) return showMsg('이메일을 먼저 입력해주세요.', 'error');
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'https://insubee.com/login.html'
+      });
+      if (error) throw error;
+      showMsg('비밀번호 재설정 링크를 이메일로 보냈습니다.', 'success');
+    } catch (e) {
+      showMsg('재설정 실패: ' + (e.message || '다시 시도해주세요.'), 'error');
+    }
+  }
+
+  // 소셜 로그인
+  async function handleSocial(provider) {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: provider,
+        options: { redirectTo: 'https://insubee.com/' }
+      });
+      if (error) throw error;
+    } catch (e) {
+      showMsg(provider + ' 로그인 준비 중입니다. 곧 지원됩니다! 🐝', 'error');
+    }
+  }
+
+  // 이미 로그인 상태면 리디렉트
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    if (session) location.href = '/';
+  });
+</script>
+
+</body>
+</html>
