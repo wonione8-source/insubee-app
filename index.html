@@ -2,135 +2,421 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
-  <title>인슈비 — 나에게 맞는 보험설계사를 찾아보세요</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>인슈비 — 내가 원할 때, 전문가를 만나세요</title>
+  <meta name="description" content="귀찮은 영업 없이, 검증된 보험 전문가를 내가 직접 찾고 상담받는 플랫폼. 인슈비에서 보험설계사를 만나보세요.">
+  <link href="https://cdn.jsdelivr.net/npm/pretendard@latest/dist/web/static/pretendard.min.css" rel="stylesheet">
   <style>
-    .landing {
-      min-height: 100dvh;
-      display: flex;
-      flex-direction: column;
-      max-width: var(--max-width);
-      margin: 0 auto;
-      background: #fff;
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --navy: #1a1f3d;
+      --navy-light: #252a4a;
+      --gold: #e6a817;
+      --gold-light: #f0c040;
+      --white: #ffffff;
+      --gray-100: #f5f5f5;
+      --gray-200: #e8e8e8;
+      --gray-400: #999;
+      --gray-600: #666;
+      --gray-800: #333;
+      --green-dark: #2D6A3F;
     }
-    .landing-hero {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      padding: 40px 24px;
+    body {
+      font-family: 'Pretendard', -apple-system, sans-serif;
+      color: var(--gray-800); line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
     }
-    .landing-logo {
-      font-size: 48px;
-      font-weight: 900;
-      color: var(--primary);
-      letter-spacing: -1px;
-      margin-bottom: 12px;
+    a { text-decoration: none; color: inherit; }
+    button { cursor: pointer; border: none; font-family: inherit; }
+
+    /* HEADER */
+    .header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(26,31,61,0.95); backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
     }
-    .landing-logo span { color: var(--secondary); }
-    .landing-desc {
-      font-size: 16px;
-      color: var(--gray-500);
-      line-height: 1.7;
-      margin-bottom: 36px;
+    .header-inner {
+      max-width: 1200px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px; height: 64px;
     }
-    .landing-features {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      width: 100%;
-      margin-bottom: 36px;
+    .logo {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 22px; font-weight: 800; color: var(--white);
+    }
+    .logo-icon {
+      width: 32px; height: 32px; background: var(--gold);
+      border-radius: 6px; display: flex; align-items: center;
+      justify-content: center; font-size: 16px; font-weight: 900; color: var(--navy);
+    }
+    .nav { display: flex; align-items: center; gap: 8px; }
+    .nav a {
+      color: rgba(255,255,255,0.75); font-size: 14px; font-weight: 500;
+      padding: 8px 14px; border-radius: 8px; transition: all 0.2s;
+    }
+    .nav a:hover, .nav a.active { color: var(--gold); }
+    .nav .btn-register {
+      background: var(--white); color: var(--navy);
+      font-weight: 700; padding: 9px 20px; border-radius: 24px;
+      font-size: 14px; margin-left: 8px; transition: all 0.2s;
+    }
+    .nav .btn-register:hover { background: var(--gold); color: var(--navy); }
+    .mobile-menu-btn { display: none; background: none; color: var(--white); font-size: 28px; padding: 4px; }
+
+    /* HERO */
+    .hero {
+      background: var(--navy);
+      background-image:
+        radial-gradient(circle at 20% 50%, rgba(230,168,23,0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 30%, rgba(230,168,23,0.05) 0%, transparent 50%);
+      min-height: 600px; padding: 120px 32px 60px;
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: ''; position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+    .hero-inner {
+      max-width: 1200px; margin: 0 auto;
+      display: flex; align-items: center; gap: 60px;
+      position: relative; z-index: 1;
+    }
+    .hero-text { flex: 1; }
+    .hero-title { font-size: 44px; font-weight: 900; color: var(--white); line-height: 1.3; margin-bottom: 20px; }
+    .hero-title .highlight { color: var(--gold); }
+    .hero-desc { font-size: 17px; color: rgba(255,255,255,0.7); line-height: 1.8; margin-bottom: 32px; max-width: 480px; }
+    .hero-buttons { display: flex; gap: 16px; margin-bottom: 48px; flex-wrap: wrap; }
+    .btn-primary {
+      display: inline-block; background: var(--gold); color: var(--navy);
+      font-size: 16px; font-weight: 700; padding: 15px 32px;
+      border-radius: 12px; transition: all 0.2s;
+    }
+    .btn-primary:hover { background: var(--gold-light); transform: translateY(-2px); }
+    .btn-outline {
+      display: inline-block; background: transparent; color: var(--white);
+      font-size: 16px; font-weight: 600; padding: 15px 32px;
+      border-radius: 12px; border: 1.5px solid rgba(255,255,255,0.3); transition: all 0.2s;
+    }
+    .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+    .hero-stats { display: flex; gap: 40px; }
+    .stat-value { font-size: 28px; font-weight: 900; color: var(--gold); margin-bottom: 4px; }
+    .stat-label { font-size: 13px; color: rgba(255,255,255,0.5); }
+
+    /* HEXAGON */
+    .hero-visual { flex: 0 0 460px; display: flex; justify-content: center; align-items: center; }
+    .hex-card {
+      width: 120px; height: 120px;
+      clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; transition: all 0.3s;
+    }
+    .hex-card.filled { background: var(--gold); color: var(--navy); }
+    .hex-card.outline { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.6); }
+    .hex-card.accent { background: var(--navy-light); border: 2px solid var(--gold); color: var(--gold); }
+    .hex-card.green { background: var(--green-dark); color: var(--white); }
+    .hex-card .hex-name { font-size: 13px; font-weight: 700; }
+    .hex-card .hex-spec { font-size: 10px; margin-top: 2px; opacity: 0.8; }
+    .hex-card.filled:hover { transform: scale(1.08); }
+
+    /* CTA BAR */
+    .cta-bar { background: var(--gray-100); border-bottom: 1px solid var(--gray-200); }
+    .cta-bar-inner {
+      max-width: 1200px; margin: 0 auto; padding: 28px 32px;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+    }
+    .cta-text h3 { font-size: 20px; font-weight: 700; }
+    .cta-text h3 .hl { color: var(--gold); }
+    .cta-text p { font-size: 14px; color: var(--gray-600); margin-top: 4px; }
+    .cta-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn-cta {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 24px; border-radius: 12px; font-size: 15px; font-weight: 600; transition: all 0.2s;
+    }
+    .btn-cta.primary { background: var(--navy); color: var(--white); }
+    .btn-cta.primary:hover { background: var(--navy-light); }
+    .btn-cta.secondary { background: var(--white); color: var(--gray-800); border: 1.5px solid var(--gray-200); }
+    .btn-cta.secondary:hover { border-color: var(--navy); }
+
+    /* SECTIONS */
+    .section { padding: 80px 32px; }
+    .section-center { text-align: center; max-width: 800px; margin: 0 auto; }
+    .section-title { font-size: 36px; font-weight: 900; line-height: 1.4; margin-bottom: 20px; }
+    .section-desc { font-size: 16px; color: var(--gray-600); line-height: 1.8; }
+
+    /* FEATURES */
+    .features-section { background: var(--white); padding: 80px 32px; }
+    .features-grid {
+      max-width: 1000px; margin: 48px auto 0;
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px;
     }
     .feature-card {
-      background: var(--gray-50);
-      border-radius: var(--radius);
-      padding: 20px 16px;
-      text-align: center;
+      text-align: center; padding: 36px 24px;
+      background: var(--gray-100); border-radius: 16px; transition: all 0.3s;
     }
-    .feature-card i {
-      font-size: 28px;
-      color: var(--primary);
-      margin-bottom: 8px;
-      display: block;
+    .feature-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.08); }
+    .feature-icon {
+      width: 56px; height: 56px; margin: 0 auto 16px;
+      background: var(--navy); border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; color: var(--gold);
     }
-    .feature-card .title {
-      font-size: 14px;
-      font-weight: 700;
-      margin-bottom: 4px;
+    .feature-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    .feature-card p { font-size: 14px; color: var(--gray-600); line-height: 1.7; }
+
+    /* HOW IT WORKS */
+    .how-section { background: var(--navy); padding: 80px 32px; }
+    .how-section .section-title { color: var(--white); }
+    .how-section .section-desc { color: rgba(255,255,255,0.6); }
+    .steps-grid {
+      max-width: 1000px; margin: 48px auto 0;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px;
     }
-    .feature-card .desc {
-      font-size: 12px;
-      color: var(--gray-500);
+    .step-card { text-align: center; padding: 32px 16px; }
+    .step-num {
+      width: 40px; height: 40px; margin: 0 auto 16px;
+      background: var(--gold); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 800; color: var(--navy);
     }
-    .landing-actions {
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+    .step-card h4 { font-size: 16px; font-weight: 700; color: var(--white); margin-bottom: 8px; }
+    .step-card p { font-size: 13px; color: rgba(255,255,255,0.5); line-height: 1.6; }
+
+    /* TRUST */
+    .trust-section { padding: 80px 32px; background: var(--gray-100); }
+    .trust-grid {
+      max-width: 900px; margin: 48px auto 0;
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
     }
-    .landing-footer {
-      padding: 20px;
-      text-align: center;
-      font-size: 12px;
-      color: var(--gray-400);
+    .trust-card { background: var(--white); border-radius: 16px; padding: 32px; text-align: center; }
+    .trust-icon { font-size: 36px; margin-bottom: 12px; }
+    .trust-card h4 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+    .trust-card p { font-size: 14px; color: var(--gray-600); line-height: 1.6; }
+
+    /* FINAL CTA */
+    .final-cta { background: var(--navy); padding: 80px 32px; text-align: center; }
+    .final-cta h2 { font-size: 32px; font-weight: 900; color: var(--white); margin-bottom: 12px; }
+    .final-cta p { font-size: 16px; color: rgba(255,255,255,0.6); margin-bottom: 32px; }
+    .final-cta .btn-primary { font-size: 18px; padding: 18px 48px; }
+
+    /* FOOTER */
+    .footer { background: #111; padding: 48px 32px 32px; color: rgba(255,255,255,0.4); font-size: 13px; }
+    .footer-inner { max-width: 1200px; margin: 0 auto; }
+    .footer-top {
+      display: flex; justify-content: space-between;
+      padding-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.1);
+      margin-bottom: 24px; flex-wrap: wrap; gap: 24px;
     }
+    .footer-brand { font-size: 18px; font-weight: 800; color: var(--white); margin-bottom: 8px; }
+    .footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
+    .footer-links a { color: rgba(255,255,255,0.5); transition: color 0.2s; }
+    .footer-links a:hover { color: var(--gold); }
+    .footer-info { line-height: 1.8; }
+
+    /* RESPONSIVE */
+    @media (max-width: 900px) {
+      .hero-inner { flex-direction: column; text-align: center; }
+      .hero-text { align-items: center; display: flex; flex-direction: column; }
+      .hero-title { font-size: 32px; }
+      .hero-desc { max-width: 100%; }
+      .hero-buttons { justify-content: center; }
+      .hero-stats { justify-content: center; }
+      .hero-visual { flex: none; }
+      .nav { display: none; }
+      .mobile-menu-btn { display: block; }
+      .features-grid { grid-template-columns: 1fr; }
+      .steps-grid { grid-template-columns: repeat(2, 1fr); }
+      .trust-grid { grid-template-columns: 1fr; }
+      .cta-bar-inner { flex-direction: column; text-align: center; }
+      .section-title { font-size: 28px; }
+    }
+    @media (max-width: 600px) {
+      .hero { padding: 100px 20px 40px; min-height: auto; }
+      .hero-title { font-size: 26px; }
+      .hero-stats { gap: 24px; }
+      .stat-value { font-size: 22px; }
+      .section { padding: 60px 20px; }
+      .steps-grid { grid-template-columns: 1fr; }
+    }
+    html { scroll-behavior: smooth; }
   </style>
 </head>
 <body>
-  <div class="landing" id="landing">
-    <div class="landing-hero">
-      <div class="landing-logo">인슈<span>비</span></div>
-      <p class="landing-desc">
-        나에게 딱 맞는 보험설계사를 찾고<br>
-        무료로 전문 상담을 받아보세요
-      </p>
 
-      <div class="landing-features">
-        <div class="feature-card">
-          <i class="ti ti-search"></i>
-          <div class="title">설계사 검색</div>
-          <div class="desc">지역·전문 분야별 검색</div>
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-inner">
+      <a href="/" class="logo">
+        <div class="logo-icon">비</div>
+        인슈비
+      </a>
+      <nav class="nav">
+        <a href="agents.html" class="active">고객 상담신청</a>
+        <a href="agents.html">설계사 찾기</a>
+        <a href="#features">보험가이드</a>
+        <a href="https://insusignal.kr" target="_blank">보험뉴스</a>
+        <a href="#how">AI도우미</a>
+        <a href="login.html" class="btn-register">사전등록</a>
+      </nav>
+      <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+    </div>
+    <div id="mobileMenu" style="display:none;background:var(--navy);padding:16px 24px 24px;">
+      <a href="agents.html" style="display:block;padding:12px 0;color:rgba(255,255,255,0.8);font-size:15px;border-bottom:1px solid rgba(255,255,255,0.1);">고객 상담신청</a>
+      <a href="agents.html" style="display:block;padding:12px 0;color:rgba(255,255,255,0.8);font-size:15px;border-bottom:1px solid rgba(255,255,255,0.1);">설계사 찾기</a>
+      <a href="#features" style="display:block;padding:12px 0;color:rgba(255,255,255,0.8);font-size:15px;border-bottom:1px solid rgba(255,255,255,0.1);">보험가이드</a>
+      <a href="https://insusignal.kr" target="_blank" style="display:block;padding:12px 0;color:rgba(255,255,255,0.8);font-size:15px;border-bottom:1px solid rgba(255,255,255,0.1);">보험뉴스</a>
+      <a href="#how" style="display:block;padding:12px 0;color:rgba(255,255,255,0.8);font-size:15px;border-bottom:1px solid rgba(255,255,255,0.1);">AI도우미</a>
+      <a href="login.html" style="display:block;padding:14px 0;color:var(--gold);font-size:15px;font-weight:700;">사전등록 →</a>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-text">
+        <h1 class="hero-title">내가 원할 때,<br><span class="highlight">전문가를</span> 만나세요.</h1>
+        <p class="hero-desc">귀찮은 영업 없이, 검증된 보험 전문가를 내가 직접 찾고 상담받는 플랫폼. 설계사라면, 고객이 먼저 찾아오는 새로운 채널을 경험하세요. 예비 설계사도 환영합니다.</p>
+        <div class="hero-buttons">
+          <a href="login.html" class="btn-primary">무료 사전등록 하기</a>
+          <a href="#features" class="btn-outline">기능 살펴보기</a>
         </div>
-        <div class="feature-card">
-          <i class="ti ti-message-circle"></i>
-          <div class="title">무료 상담</div>
-          <div class="desc">원하는 설계사에게 직접 요청</div>
-        </div>
-        <div class="feature-card">
-          <i class="ti ti-star"></i>
-          <div class="title">평점·리뷰</div>
-          <div class="desc">실제 고객의 후기 확인</div>
-        </div>
-        <div class="feature-card">
-          <i class="ti ti-shield-check"></i>
-          <div class="title">검증된 설계사</div>
-          <div class="desc">등록번호 인증 설계사만</div>
+        <div class="hero-stats">
+          <div class="stat-item">
+            <div class="stat-value">0원</div>
+            <div class="stat-label">사전등록 비용</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">선착순</div>
+            <div class="stat-label">창립 멤버 혜택</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">인증 배지</div>
+            <div class="stat-label">자격증 검증 시스템</div>
+          </div>
         </div>
       </div>
-
-      <div class="landing-actions">
-        <a href="/login.html" class="btn btn-primary btn-lg btn-block">시작하기</a>
-        <a href="/login.html" class="btn btn-outline btn-lg btn-block">이미 계정이 있어요</a>
+      <div class="hero-visual">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+          <div style="display:flex;gap:8px;">
+            <div class="hex-card filled"><span class="hex-name">박준호</span><span class="hex-spec">건강·암 8년차</span></div>
+            <div class="hex-card green"><span class="hex-name">정유진</span><span class="hex-spec">어린이·태아 10년차</span></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:-16px;">
+            <div class="hex-card filled"><span class="hex-name">김서연</span><span class="hex-spec">종신·연금 12년차</span></div>
+            <div class="hex-card accent"><span class="hex-name">당신의 자리</span><span class="hex-spec">지금 등록하세요</span></div>
+            <div class="hex-card filled"><span class="hex-name">한도윤</span><span class="hex-spec">연금·간병 18년차</span></div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:-16px;">
+            <div class="hex-card green"><span class="hex-name">이하은</span><span class="hex-spec">화재·재물 15년차</span></div>
+            <div class="hex-card outline"></div>
+          </div>
+        </div>
       </div>
     </div>
+  </section>
 
-    <div class="landing-footer">
-      © 2026 원니원주식회사 · <a href="/terms.html" style="color:inherit">이용약관</a> · <a href="/privacy.html" style="color:inherit">개인정보처리방침</a>
+  <!-- CTA BAR -->
+  <section class="cta-bar">
+    <div class="cta-bar-inner">
+      <div class="cta-text">
+        <h3>보험 가입을 알아보는 <span class="hl">고객</span>이신가요? 🐝</h3>
+        <p>원하는 조건만 알려주시면 검증된 전문 설계사를 무료로 연결해 드려요.</p>
+      </div>
+      <div class="cta-buttons">
+        <a href="agents.html" class="btn-cta primary">🔍 내게 맞는 보험 찾기</a>
+        <a href="agents.html" class="btn-cta secondary">👤 설계사 찾기</a>
+      </div>
     </div>
-  </div>
+  </section>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js"></script>
+  <!-- PROBLEM -->
+  <section class="section">
+    <div class="section-center">
+      <h2 class="section-title">60만 설계사 시대,<br>실력만으로는 보이지 않습니다</h2>
+      <p class="section-desc">지인 소개가 끊기면 영업도 끊기는 구조. 인슈비는 설계사의 자격·경력·전문분야를 프로필로 만들어, 보험이 필요한 고객이 검색으로 찾아오게 합니다.</p>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="features-section" id="features">
+    <div class="section-center">
+      <h2 class="section-title">인슈비가 만드는<br>새로운 보험 생태계</h2>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card"><div class="feature-icon">🔍</div><h3>설계사 검색</h3><p>지역, 전문분야, 경력으로 나에게 맞는 설계사를 직접 찾으세요.</p></div>
+      <div class="feature-card"><div class="feature-icon">✅</div><h3>자격 인증</h3><p>등록번호 기반 자격증 검증으로 검증된 설계사만 활동합니다.</p></div>
+      <div class="feature-card"><div class="feature-icon">💬</div><h3>무료 상담 요청</h3><p>원하는 설계사에게 직접 상담을 요청하고, 맞춤 제안을 받으세요.</p></div>
+      <div class="feature-card"><div class="feature-icon">⭐</div><h3>평점 · 리뷰</h3><p>실제 고객의 후기를 확인하고 신뢰할 수 있는 설계사를 선택하세요.</p></div>
+      <div class="feature-card"><div class="feature-icon">📊</div><h3>프로필 대시보드</h3><p>설계사는 자신의 전문성을 프로필로 어필하고 고객을 유치합니다.</p></div>
+      <div class="feature-card"><div class="feature-icon">🤖</div><h3>AI 도우미</h3><p>보험 용어, 상품 비교, 가입 가이드를 AI가 쉽게 설명해 드립니다.</p></div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="how-section" id="how">
+    <div class="section-center">
+      <h2 class="section-title">어떻게 이용하나요?</h2>
+      <p class="section-desc">고객도, 설계사도 3분이면 시작할 수 있습니다.</p>
+    </div>
+    <div class="steps-grid">
+      <div class="step-card"><div class="step-num">1</div><h4>회원가입</h4><p>고객 또는 설계사로<br>무료 가입하세요</p></div>
+      <div class="step-card"><div class="step-num">2</div><h4>프로필 설정</h4><p>설계사는 전문분야와 경력을, 고객은 관심 보험을 설정하세요</p></div>
+      <div class="step-card"><div class="step-num">3</div><h4>검색 · 매칭</h4><p>조건에 맞는 설계사를 검색하고 상담을 요청하세요</p></div>
+      <div class="step-card"><div class="step-num">4</div><h4>상담 · 계약</h4><p>전문가와 1:1 상담 후<br>나에게 맞는 보험에 가입하세요</p></div>
+    </div>
+  </section>
+
+  <!-- TRUST -->
+  <section class="trust-section" id="trust">
+    <div class="section-center"><h2 class="section-title">왜 인슈비인가요?</h2></div>
+    <div class="trust-grid">
+      <div class="trust-card"><div class="trust-icon">🛡️</div><h4>등록번호 인증</h4><p>금융감독원 등록번호 기반으로 자격을 검증합니다</p></div>
+      <div class="trust-card"><div class="trust-icon">🚫</div><h4>영업 전화 없음</h4><p>고객이 먼저 선택하는 구조. 원치 않는 연락은 없습니다</p></div>
+      <div class="trust-card"><div class="trust-icon">💰</div><h4>완전 무료</h4><p>고객은 검색·상담·매칭 모두 무료로 이용할 수 있습니다</p></div>
+    </div>
+  </section>
+
+  <!-- FINAL CTA -->
+  <section class="final-cta">
+    <h2>지금 사전등록하고<br>창립 멤버가 되세요</h2>
+    <p>사전등록은 무료이며, 정식 오픈 시 우선 혜택을 드립니다.</p>
+    <a href="login.html" class="btn-primary">무료 사전등록 →</a>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div>
+          <div class="footer-brand">인슈비 InsuBee</div>
+          <p>내가 원할 때, 전문가를 만나는 보험 플랫폼</p>
+        </div>
+        <div class="footer-links">
+          <a href="privacy.html">개인정보처리방침</a>
+          <a href="terms.html">이용약관</a>
+          <a href="https://insusignal.kr" target="_blank">인슈시그널</a>
+          <a href="login.html">로그인</a>
+        </div>
+      </div>
+      <div class="footer-info">
+        원니원주식회사 | 대표 김성원<br>
+        서울특별시 금천구 시흥대로 123<br>
+        사업자등록번호: 000-00-00000<br>
+        © 2026 원니원주식회사. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
   <script>
-    // 이미 로그인 된 사용자는 대시보드로
-    (async () => {
-      const user = await getCurrentUser();
-      if (user) location.href = '/dashboard.html';
-    })();
+    function toggleMobileMenu() {
+      const m = document.getElementById('mobileMenu');
+      m.style.display = m.style.display === 'none' ? 'block' : 'none';
+    }
+    document.querySelectorAll('#mobileMenu a').forEach(l => {
+      l.addEventListener('click', () => { document.getElementById('mobileMenu').style.display = 'none'; });
+    });
   </script>
 </body>
 </html>
