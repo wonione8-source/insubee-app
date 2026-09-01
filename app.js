@@ -6,16 +6,24 @@
 const SUPABASE_URL = 'https://dfzhjqychbodpdwdkdab.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_1Q3qrqGccSF3F6pT1SJX6g_rQoHUbZc';
 
-// Supabase 클라이언트 초기화
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Supabase 클라이언트 초기화 (안전 체크)
+let supabase;
+if (window.supabase && window.supabase.createClient) {
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+} else {
+  console.error('Supabase library not loaded. Make sure the CDN script is before app.js.');
+}
 
 // ========================
 // Auth 관련
 // ========================
 
 async function getCurrentUser() {
-  const { data: { user } } = await supabase.auth.getUser();
-  return user;
+  if (!supabase) return null;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    return user;
+  } catch (e) { console.error('getCurrentUser error:', e); return null; }
 }
 
 async function getCurrentProfile() {
@@ -124,12 +132,10 @@ async function getAgentReviews(agentId) {
   return data || [];
 }
 
-// 설계사 프로필 생성/수정
 async function upsertAgentProfile(agentData) {
   const user = await getCurrentUser();
   if (!user) throw new Error('로그인이 필요합니다');
 
-  // 기존 설계사 프로필 확인
   const { data: existing } = await supabase
     .from('agents')
     .select('id')
@@ -198,7 +204,6 @@ async function createMatchingRequest(agentId, requestData) {
   const user = await getCurrentUser();
   if (!user) throw new Error('로그인이 필요합니다');
 
-  // 고객 ID 조회
   const { data: customer } = await supabase
     .from('customers')
     .select('id')
@@ -219,7 +224,6 @@ async function createMatchingRequest(agentId, requestData) {
 
   if (error) throw error;
 
-  // 알림 생성 (설계사에게)
   const { data: agent } = await supabase
     .from('agents')
     .select('user_id')
@@ -239,7 +243,6 @@ async function createMatchingRequest(agentId, requestData) {
   return data;
 }
 
-// 내 매칭 요청 목록 (고객용)
 async function getMyRequests() {
   const user = await getCurrentUser();
   if (!user) return [];
@@ -268,7 +271,6 @@ async function getMyRequests() {
   return data || [];
 }
 
-// 받은 매칭 요청 목록 (설계사용)
 async function getReceivedRequests() {
   const user = await getCurrentUser();
   if (!user) return [];
@@ -298,7 +300,6 @@ async function getReceivedRequests() {
   return data || [];
 }
 
-// 매칭 요청 응답 (설계사용)
 async function respondToRequest(requestId, status, message) {
   const { data, error } = await supabase
     .from('matching_requests')
@@ -313,7 +314,6 @@ async function respondToRequest(requestId, status, message) {
 
   if (error) throw error;
 
-  // 고객에게 알림
   const { data: request } = await supabase
     .from('matching_requests')
     .select('customer_id, customers!inner(user_id)')
@@ -394,6 +394,7 @@ async function markAllNotificationsRead() {
 // ========================
 
 function subscribeToNotifications(userId, callback) {
+  if (!supabase) return null;
   return supabase
     .channel('notifications')
     .on(
@@ -462,8 +463,8 @@ function getStatusClass(status) {
   return map[status] || '';
 }
 
-// 보험 카테고리 로드
 async function getInsuranceCategories() {
+  if (!supabase) return [];
   const { data, error } = await supabase
     .from('insurance_categories')
     .select('*')
@@ -473,7 +474,6 @@ async function getInsuranceCategories() {
   return data || [];
 }
 
-// 시/도 목록
 const REGIONS = [
   '서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
   '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'
