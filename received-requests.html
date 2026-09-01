@@ -1,204 +1,43 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
-  <title>인슈비 — 받은 요청</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
-  <style>
-    .request-actions {
-      display: flex;
-      gap: 8px;
-      margin-top: 12px;
-    }
-    .request-actions .btn { flex: 1; }
-    .customer-info-row {
-      display: flex;
-      gap: 16px;
-      font-size: 13px;
-      color: var(--gray-600);
-      margin-top: 6px;
-    }
-    .response-form {
-      margin-top: 12px;
-      padding: 12px;
-      background: var(--gray-50);
-      border-radius: var(--radius-sm);
-    }
-  </style>
-</head>
-<body>
-  <div class="app-container">
-    <div class="app-header">
-      <a href="/dashboard.html" style="color:var(--gray-600);font-size:22px;text-decoration:none">
-        <i class="ti ti-arrow-left"></i>
-      </a>
-      <span style="font-weight:700;font-size:17px">받은 상담 요청</span>
-      <div style="width:22px"></div>
+<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1"><title>인슈비 — 받은 요청</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css"></head><body>
+<!-- HEADER -->
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a href="/" class="site-logo"><div class="site-logo-icon">비</div>인슈비</a>
+      <nav class="site-nav">
+        <a href="agents.html">설계사 찾기</a>
+        <a href="https://insubee.kr" target="_blank">보험뉴스</a>
+        <a href="dashboard.html" class="btn-register">대시보드</a>
+      </nav>
+      <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
     </div>
-
-    <div class="page-content">
-      <div class="tab-group">
-        <div class="tab-item active" onclick="filterTab('pending')">새 요청</div>
-        <div class="tab-item" onclick="filterTab('active')">진행중</div>
-        <div class="tab-item" onclick="filterTab('all')">전체</div>
+    <div id="mobileMenu" class="mobile-menu">
+      <a href="agents.html">설계사 찾기</a>
+      <a href="https://insubee.kr" target="_blank">보험뉴스</a>
+      <a href="dashboard.html" class="highlight">대시보드 →</a>
+    </div>
+  </header>
+<div class="page-container">
+  <h1 class="page-title">받은 상담 요청</h1>
+  <p class="page-subtitle">고객이 보낸 상담 요청을 확인하고 응답하세요</p>
+  <div id="requests-list"><div class="spinner"></div></div>
+</div>
+<!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-top">
+        <div><div class="footer-brand">인슈비 InsuBee</div><p>내가 원할 때, 전문가를 만나는 보험 플랫폼</p></div>
+        <div class="footer-links"><a href="privacy.html">개인정보처리방침</a><a href="terms.html">이용약관</a><a href="https://insubee.kr" target="_blank">인슈비뉴스</a></div>
       </div>
-
-      <div id="requests-list">
-        <div class="spinner"></div>
-      </div>
+      <div class="footer-info">원니원주식회사 | 대표 김성원<br>서울특별시 금천구 시흥대로 123<br>사업자등록번호: 000-00-00000<br>© 2026 원니원주식회사. All rights reserved.</div>
     </div>
-
-    <div class="bottom-nav">
-      <a href="/dashboard.html" class="nav-item"><i class="ti ti-home"></i>홈</a>
-      <a href="/dashboard.html" class="nav-item"><i class="ti ti-chart-bar"></i>현황</a>
-      <a href="/received-requests.html" class="nav-item active"><i class="ti ti-mail"></i>받은요청</a>
-      <a href="/notifications.html" class="nav-item"><i class="ti ti-bell"></i>알림</a>
-      <a href="/mypage.html" class="nav-item"><i class="ti ti-user"></i>마이</a>
-    </div>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js"></script>
-  <script>
-    let allRequests = [];
-    let currentTab = 'pending';
-
-    (async () => {
-      await requireAuth();
-      allRequests = await getReceivedRequests();
-      renderRequests();
-
-      // 실시간 새 요청 감지
-      const user = await getCurrentUser();
-      subscribeToNotifications(user.id, (notif) => {
-        if (notif.type === 'matching_request') {
-          showToast('새로운 상담 요청!');
-          loadFresh();
-        }
-      });
-    })();
-
-    async function loadFresh() {
-      allRequests = await getReceivedRequests();
-      renderRequests();
-    }
-
-    function filterTab(tab) {
-      currentTab = tab;
-      document.querySelectorAll('.tab-item').forEach((el, i) => {
-        const tabs = ['pending', 'active', 'all'];
-        el.classList.toggle('active', tabs[i] === tab);
-      });
-      renderRequests();
-    }
-
-    function renderRequests() {
-      let filtered = allRequests;
-      if (currentTab === 'pending') filtered = allRequests.filter(r => r.status === 'pending');
-      else if (currentTab === 'active') filtered = allRequests.filter(r => ['accepted', 'in_progress'].includes(r.status));
-
-      const container = document.getElementById('requests-list');
-
-      if (filtered.length === 0) {
-        container.innerHTML = `
-          <div class="empty-state">
-            <i class="ti ti-inbox"></i>
-            <p>${currentTab === 'pending' ? '새로운 요청이 없습니다' : '해당하는 요청이 없습니다'}</p>
-          </div>
-        `;
-        return;
-      }
-
-      container.innerHTML = filtered.map(r => `
-        <div class="card" id="req-${r.id}">
-          <div class="flex-between">
-            <div style="display:flex;align-items:center;gap:10px">
-              <div class="agent-avatar" style="width:44px;height:44px;font-size:16px;background:#D1FAE5;color:#065F46">
-                ${(r.customers?.profiles?.name || '?')[0]}
-              </div>
-              <div>
-                <div style="font-weight:700;font-size:15px">${r.customers?.profiles?.name || '고객'}</div>
-                <div class="customer-info-row">
-                  <span><i class="ti ti-map-pin" style="font-size:13px"></i> ${r.customers?.region_sido || '미등록'}</span>
-                  <span>${r.insurance_type || '보험상담'}</span>
-                </div>
-              </div>
-            </div>
-            <span class="status ${getStatusClass(r.status)}">${getStatusLabel(r.status)}</span>
-          </div>
-
-          ${r.message ? `
-            <div style="background:var(--gray-50);border-radius:8px;padding:10px 12px;margin:12px 0;font-size:14px;color:var(--gray-700)">
-              "${r.message}"
-            </div>
-          ` : ''}
-
-          <div style="font-size:13px;color:var(--gray-500);margin-top:8px">
-            <span><i class="ti ti-clock" style="font-size:13px"></i> 선호시간: ${r.preferred_time || '미정'}</span>
-            · <span>연락방식: ${r.preferred_contact === 'phone' ? '전화' : r.preferred_contact === 'video' ? '영상통화' : '채팅'}</span>
-          </div>
-
-          ${r.status === 'pending' ? `
-            <div class="response-form" id="form-${r.id}" style="display:none">
-              <textarea class="form-input" id="msg-${r.id}" placeholder="고객에게 보낼 메시지 (선택)" style="min-height:60px;font-size:14px"></textarea>
-            </div>
-            <div class="request-actions">
-              <button class="btn btn-primary btn-sm" onclick="handleResponse('${r.id}', 'accepted')">
-                <i class="ti ti-check"></i> 수락
-              </button>
-              <button class="btn btn-outline btn-sm" onclick="toggleForm('${r.id}')">
-                <i class="ti ti-message"></i> 메시지
-              </button>
-              <button class="btn btn-danger btn-sm" onclick="handleResponse('${r.id}', 'rejected')">
-                <i class="ti ti-x"></i> 거절
-              </button>
-            </div>
-          ` : ''}
-
-          ${r.status === 'accepted' ? `
-            <div style="margin-top:12px;padding:10px 12px;background:#EFF6FF;border-radius:8px;border-left:3px solid var(--primary)">
-              <div class="text-sm" style="font-weight:600;color:var(--primary)">고객 연락처</div>
-              <div class="text-sm mt-8">
-                ${r.customers?.profiles?.phone ? `📞 ${r.customers.profiles.phone}` : ''}
-                ${r.customers?.profiles?.email ? `<br>✉️ ${r.customers.profiles.email}` : ''}
-              </div>
-            </div>
-          ` : ''}
-
-          ${r.agent_response_message ? `
-            <div style="margin-top:8px;font-size:13px;color:var(--gray-500)">
-              내 응답: "${r.agent_response_message}"
-            </div>
-          ` : ''}
-
-          <div class="text-sm text-muted mt-8">${timeAgo(r.created_at)}</div>
-        </div>
-      `).join('');
-    }
-
-    function toggleForm(id) {
-      const form = document.getElementById('form-' + id);
-      form.style.display = form.style.display === 'none' ? 'block' : 'none';
-    }
-
-    async function handleResponse(requestId, status) {
-      const label = status === 'accepted' ? '수락' : '거절';
-      if (!confirm(`이 상담 요청을 ${label}하시겠습니까?`)) return;
-
-      const msgEl = document.getElementById('msg-' + requestId);
-      const message = msgEl ? msgEl.value : '';
-
-      try {
-        await respondToRequest(requestId, status, message);
-        showToast(`상담 요청을 ${label}했습니다`);
-        await loadFresh();
-      } catch (err) {
-        showToast('오류가 발생했습니다');
-        console.error(err);
-      }
-    }
-  </script>
-</body>
-</html>
+  </footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="app.js"></script>
+<script>function toggleMobileMenu(){const m=document.getElementById("mobileMenu");m.style.display=m.style.display==="none"||!m.style.display?"block":"none"}document.querySelectorAll("#mobileMenu a").forEach(l=>l.addEventListener("click",()=>document.getElementById("mobileMenu").style.display="none"));</script>
+<script>
+(async()=>{const user=await requireAuth();if(!user)return;const requests=await getReceivedRequests();const c=document.getElementById('requests-list');
+if(requests.length===0){c.innerHTML='<div class="empty-state"><i class="ti ti-inbox"></i><p>아직 받은 요청이 없습니다</p></div>';return}
+c.innerHTML=requests.map(r=>'<div class="card"><div class="flex-between"><div><div style="font-weight:700;font-size:15px">'+r.customers.profiles.name+' 고객</div><div class="text-sm text-muted">'+(r.insurance_type||'보험상담')+' · '+(r.customers.region_sido||'')+'</div></div><span class="status '+getStatusClass(r.status)+'">'+getStatusLabel(r.status)+'</span></div>'+(r.message?'<div class="text-sm mt-8" style="color:var(--gray-600)">"'+r.message.slice(0,80)+'"</div>':'')+
+(r.status==='pending'?'<div class="request-actions"><button class="btn btn-navy btn-sm" onclick="respond(\''+r.id+'\',\'accepted\')">수락</button><button class="btn btn-outline btn-sm" onclick="respond(\''+r.id+'\',\'rejected\')">거절</button></div>':'')+
+'<div class="text-sm text-muted mt-8">'+timeAgo(r.created_at)+'</div></div>').join('')})();
+async function respond(id,status){try{await respondToRequest(id,status,'');showToast(status==='accepted'?'수락했습니다':'거절했습니다');setTimeout(()=>location.reload(),1000)}catch(e){showToast(e.message)}}
+</script></body></html>

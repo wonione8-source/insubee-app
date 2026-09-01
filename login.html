@@ -6,287 +6,170 @@
   <title>인슈비 — 로그인</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
-  <style>
-    .login-container {
-      min-height: 100dvh;
-      display: flex;
-      flex-direction: column;
-      max-width: var(--max-width);
-      margin: 0 auto;
-      background: #fff;
-    }
-    .login-header {
-      text-align: center;
-      padding: 48px 20px 32px;
-    }
-    .login-header .logo-text {
-      font-size: 32px;
-      font-weight: 800;
-      color: var(--primary);
-      letter-spacing: -0.5px;
-    }
-    .login-header .logo-text span { color: var(--secondary); }
-    .login-header p {
-      color: var(--gray-500);
-      font-size: 14px;
-      margin-top: 8px;
-    }
-    .login-body { padding: 0 24px 40px; flex: 1; }
-    .divider {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin: 24px 0;
-      color: var(--gray-400);
-      font-size: 13px;
-    }
-    .divider::before, .divider::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--gray-200);
-    }
-    .login-footer {
-      text-align: center;
-      padding: 20px;
-      font-size: 13px;
-      color: var(--gray-500);
-    }
-    .login-footer a {
-      color: var(--primary);
-      text-decoration: none;
-      font-weight: 600;
-    }
-    .terms-check {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      margin-bottom: 10px;
-      font-size: 13px;
-      color: var(--gray-600);
-    }
-    .terms-check input {
-      margin-top: 3px;
-      accent-color: var(--primary);
-    }
-    .terms-check a { color: var(--primary); text-decoration: underline; }
-    .error-msg {
-      background: #FEE2E2;
-      color: #991B1B;
-      padding: 10px 14px;
-      border-radius: var(--radius-sm);
-      font-size: 13px;
-      margin-bottom: 16px;
-      display: none;
-    }
-    .error-msg.show { display: block; }
-  </style>
 </head>
 <body>
-  <div class="login-container">
-    <!-- Header -->
-    <div class="login-header">
-      <div class="logo-text">인슈<span>비</span></div>
-      <p>나에게 맞는 보험설계사를 찾아보세요</p>
+
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a href="/" class="site-logo"><div class="site-logo-icon">비</div>인슈비</a>
+      <nav class="site-nav">
+        <a href="agents.html">설계사 찾기</a>
+        <a href="https://insubee.kr" target="_blank">보험뉴스</a>
+        <a href="login.html" class="btn-register active">로그인</a>
+      </nav>
+      <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+    </div>
+    <div id="mobileMenu" class="mobile-menu">
+      <a href="agents.html">설계사 찾기</a>
+      <a href="https://insubee.kr" target="_blank">보험뉴스</a>
+      <a href="login.html" class="highlight">로그인 / 회원가입</a>
+    </div>
+  </header>
+
+  <div class="page-container" style="max-width:440px">
+    <div style="text-align:center;padding:24px 0 32px">
+      <div style="font-size:36px;font-weight:900;color:var(--navy)">인슈<span style="color:var(--gold)">비</span></div>
+      <p class="text-muted" style="margin-top:8px">나에게 맞는 보험설계사를 찾아보세요</p>
     </div>
 
-    <!-- Login Form -->
-    <div class="login-body">
-      <div id="error-box" class="error-msg"></div>
+    <div id="error-box" class="error-msg"></div>
 
-      <!-- Tab: 로그인 / 회원가입 -->
-      <div class="tab-group">
-        <div class="tab-item active" onclick="switchTab('login')">로그인</div>
-        <div class="tab-item" onclick="switchTab('signup')">회원가입</div>
+    <div class="tab-group">
+      <div class="tab-item active" onclick="switchTab('login')">로그인</div>
+      <div class="tab-item" onclick="switchTab('signup')">회원가입</div>
+    </div>
+
+    <!-- 로그인 폼 -->
+    <form id="login-form" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label class="form-label">이메일</label>
+        <input type="email" class="form-input" id="login-email" placeholder="이메일 주소 입력" required>
       </div>
+      <div class="form-group">
+        <label class="form-label">비밀번호</label>
+        <input type="password" class="form-input" id="login-pw" placeholder="비밀번호 입력" required>
+      </div>
+      <button type="submit" class="btn btn-navy btn-block btn-lg" id="login-btn">로그인</button>
+    </form>
 
-      <!-- 로그인 폼 -->
-      <form id="login-form" onsubmit="handleLogin(event)">
-        <div class="form-group">
-          <label class="form-label">이메일</label>
-          <input type="email" class="form-input" id="login-email" placeholder="이메일 주소 입력" required>
-        </div>
-        <div class="form-group">
-          <label class="form-label">비밀번호</label>
-          <input type="password" class="form-input" id="login-pw" placeholder="비밀번호 입력" required>
-        </div>
-        <button type="submit" class="btn btn-primary btn-block btn-lg" id="login-btn">
-          로그인
-        </button>
-      </form>
-
-      <!-- 회원가입 폼 -->
-      <form id="signup-form" class="hidden" onsubmit="handleSignup(event)">
-        <!-- 역할 선택 -->
-        <div class="form-group">
-          <label class="form-label">가입 유형을 선택하세요</label>
-          <div class="role-selector">
-            <div class="role-card active" onclick="selectRole('customer')">
-              <i class="ti ti-user"></i>
-              <div class="role-title">일반 고객</div>
-              <div class="role-desc">보험 상담을 받고 싶어요</div>
-            </div>
-            <div class="role-card" onclick="selectRole('agent')">
-              <i class="ti ti-briefcase"></i>
-              <div class="role-title">보험설계사</div>
-              <div class="role-desc">고객을 만나고 싶어요</div>
-            </div>
+    <!-- 회원가입 폼 -->
+    <form id="signup-form" class="hidden" onsubmit="handleSignup(event)">
+      <div class="form-group">
+        <label class="form-label">가입 유형을 선택하세요</label>
+        <div class="role-selector">
+          <div class="role-card active" onclick="selectRole('customer')">
+            <i class="ti ti-user"></i>
+            <div class="role-title">일반 고객</div>
+            <div class="role-desc">보험 상담을 받고 싶어요</div>
+          </div>
+          <div class="role-card" onclick="selectRole('agent')">
+            <i class="ti ti-briefcase"></i>
+            <div class="role-title">보험설계사</div>
+            <div class="role-desc">고객을 만나고 싶어요</div>
           </div>
         </div>
-
-        <div class="form-group">
-          <label class="form-label">이름</label>
-          <input type="text" class="form-input" id="signup-name" placeholder="실명 입력" required>
-        </div>
-        <div class="form-group">
-          <label class="form-label">이메일</label>
-          <input type="email" class="form-input" id="signup-email" placeholder="이메일 주소 입력" required>
-        </div>
-        <div class="form-group">
-          <label class="form-label">비밀번호</label>
-          <input type="password" class="form-input" id="signup-pw" placeholder="8자 이상" minlength="8" required>
-        </div>
-        <div class="form-group">
-          <label class="form-label">비밀번호 확인</label>
-          <input type="password" class="form-input" id="signup-pw2" placeholder="비밀번호 다시 입력" required>
-        </div>
-        <div class="form-group">
-          <label class="form-label">휴대폰 번호</label>
-          <input type="tel" class="form-input" id="signup-phone" placeholder="010-0000-0000">
-        </div>
-
-        <div class="form-group" style="margin-top:20px">
-          <div class="terms-check">
-            <input type="checkbox" id="agree-terms" required>
-            <label for="agree-terms"><a href="terms.html" target="_blank">이용약관</a> 및 <a href="privacy.html" target="_blank">개인정보처리방침</a>에 동의합니다 (필수)</label>
-          </div>
-          <div class="terms-check">
-            <input type="checkbox" id="agree-marketing">
-            <label for="agree-marketing">마케팅 정보 수신에 동의합니다 (선택)</label>
-          </div>
-        </div>
-
-        <button type="submit" class="btn btn-primary btn-block btn-lg" id="signup-btn">
-          회원가입
-        </button>
-      </form>
-
-      <div class="login-footer" id="login-footer">
-        계정이 없으신가요? <a href="#" onclick="switchTab('signup')">회원가입</a>
       </div>
-      <div class="login-footer hidden" id="signup-footer">
-        이미 계정이 있으신가요? <a href="#" onclick="switchTab('login')">로그인</a>
+      <div class="form-group">
+        <label class="form-label">이름</label>
+        <input type="text" class="form-input" id="signup-name" placeholder="실명 입력" required>
       </div>
+      <div class="form-group">
+        <label class="form-label">이메일</label>
+        <input type="email" class="form-input" id="signup-email" placeholder="이메일 주소 입력" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">비밀번호</label>
+        <input type="password" class="form-input" id="signup-pw" placeholder="8자 이상" minlength="8" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">비밀번호 확인</label>
+        <input type="password" class="form-input" id="signup-pw2" placeholder="비밀번호 다시 입력" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">휴대폰 번호</label>
+        <input type="tel" class="form-input" id="signup-phone" placeholder="010-0000-0000">
+      </div>
+      <div class="form-group" style="margin-top:20px">
+        <div class="terms-check">
+          <input type="checkbox" id="agree-terms" required>
+          <label for="agree-terms"><a href="terms.html" target="_blank">이용약관</a> 및 <a href="privacy.html" target="_blank">개인정보처리방침</a>에 동의합니다 (필수)</label>
+        </div>
+        <div class="terms-check">
+          <input type="checkbox" id="agree-marketing">
+          <label for="agree-marketing">마케팅 정보 수신에 동의합니다 (선택)</label>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-navy btn-block btn-lg" id="signup-btn">회원가입</button>
+    </form>
+
+    <div style="text-align:center;padding:20px;font-size:13px;color:var(--gray-500)" id="login-footer">
+      계정이 없으신가요? <a href="#" onclick="switchTab('signup')" style="color:var(--navy);font-weight:600">회원가입</a>
+    </div>
+    <div style="text-align:center;padding:20px;font-size:13px;color:var(--gray-500)" id="signup-footer" class="hidden">
+      이미 계정이 있으신가요? <a href="#" onclick="switchTab('login')" style="color:var(--navy);font-weight:600">로그인</a>
     </div>
   </div>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-top">
+        <div><div class="footer-brand">인슈비 InsuBee</div><p>내가 원할 때, 전문가를 만나는 보험 플랫폼</p></div>
+        <div class="footer-links">
+          <a href="privacy.html">개인정보처리방침</a>
+          <a href="terms.html">이용약관</a>
+          <a href="https://insubee.kr" target="_blank">인슈비뉴스</a>
+        </div>
+      </div>
+      <div class="footer-info">원니원주식회사 | 대표 김성원<br>서울특별시 금천구 시흥대로 123<br>사업자등록번호: 000-00-00000<br>© 2026 원니원주식회사. All rights reserved.</div>
+    </div>
+  </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
   <script>
     let selectedRole = 'customer';
+    (async () => { const user = await getCurrentUser(); if (user) location.href = '/dashboard.html'; })();
 
-    // 이미 로그인 된 경우 대시보드로
-    (async () => {
-      const user = await getCurrentUser();
-      if (user) location.href = '/dashboard.html';
-    })();
+    function toggleMobileMenu() { const m = document.getElementById('mobileMenu'); m.style.display = m.style.display === 'none' || !m.style.display ? 'block' : 'none'; }
+    document.querySelectorAll('#mobileMenu a').forEach(l => l.addEventListener('click', () => document.getElementById('mobileMenu').style.display = 'none'));
 
     function switchTab(tab) {
-      document.querySelectorAll('.tab-item').forEach((el, i) => {
-        el.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'signup' && i === 1));
-      });
+      document.querySelectorAll('.tab-item').forEach((el, i) => el.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'signup' && i === 1)));
       document.getElementById('login-form').classList.toggle('hidden', tab !== 'login');
       document.getElementById('signup-form').classList.toggle('hidden', tab !== 'signup');
       document.getElementById('login-footer').classList.toggle('hidden', tab !== 'login');
       document.getElementById('signup-footer').classList.toggle('hidden', tab !== 'signup');
       hideError();
     }
-
-    function selectRole(role) {
-      selectedRole = role;
-      document.querySelectorAll('.role-card').forEach((el, i) => {
-        el.classList.toggle('active', (role === 'customer' && i === 0) || (role === 'agent' && i === 1));
-      });
-    }
-
-    function showError(msg) {
-      const box = document.getElementById('error-box');
-      box.textContent = msg;
-      box.classList.add('show');
-    }
-
-    function hideError() {
-      document.getElementById('error-box').classList.remove('show');
-    }
+    function selectRole(role) { selectedRole = role; document.querySelectorAll('.role-card').forEach((el, i) => el.classList.toggle('active', (role === 'customer' && i === 0) || (role === 'agent' && i === 1))); }
+    function showError(msg) { const b = document.getElementById('error-box'); b.textContent = msg; b.classList.add('show'); }
+    function hideError() { document.getElementById('error-box').classList.remove('show'); }
 
     async function handleLogin(e) {
-      e.preventDefault();
-      hideError();
-      const btn = document.getElementById('login-btn');
-      btn.disabled = true;
-      btn.textContent = '로그인 중...';
-
-      try {
-        await signIn(
-          document.getElementById('login-email').value,
-          document.getElementById('login-pw').value
-        );
-        location.href = '/dashboard.html';
-      } catch (err) {
-        showError(err.message === 'Invalid login credentials'
-          ? '이메일 또는 비밀번호가 올바르지 않습니다.'
-          : err.message);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = '로그인';
-      }
+      e.preventDefault(); hideError();
+      const btn = document.getElementById('login-btn'); btn.disabled = true; btn.textContent = '로그인 중...';
+      try { await signIn(document.getElementById('login-email').value, document.getElementById('login-pw').value); location.href = '/dashboard.html'; }
+      catch (err) { showError(err.message === 'Invalid login credentials' ? '이메일 또는 비밀번호가 올바르지 않습니다.' : err.message); }
+      finally { btn.disabled = false; btn.textContent = '로그인'; }
     }
-
     async function handleSignup(e) {
-      e.preventDefault();
-      hideError();
-
+      e.preventDefault(); hideError();
       const pw = document.getElementById('signup-pw').value;
-      const pw2 = document.getElementById('signup-pw2').value;
-      if (pw !== pw2) return showError('비밀번호가 일치하지 않습니다.');
-
-      const btn = document.getElementById('signup-btn');
-      btn.disabled = true;
-      btn.textContent = '가입 중...';
-
+      if (pw !== document.getElementById('signup-pw2').value) return showError('비밀번호가 일치하지 않습니다.');
+      const btn = document.getElementById('signup-btn'); btn.disabled = true; btn.textContent = '가입 중...';
       try {
-        await signUp(
-          document.getElementById('signup-email').value,
-          pw,
-          document.getElementById('signup-name').value,
-          selectedRole
-        );
-
-        // 프로필 업데이트 (전화번호, 약관동의)
+        await signUp(document.getElementById('signup-email').value, pw, document.getElementById('signup-name').value, selectedRole);
         const user = await getCurrentUser();
         if (user) {
-          await supabase.from('profiles').update({
-            phone: document.getElementById('signup-phone').value,
-            agreed_terms: true,
-            agreed_privacy: true,
-            agreed_marketing: document.getElementById('agree-marketing').checked
-          }).eq('id', user.id);
-
-          // 역할별 하위 프로필 생성
-          if (selectedRole === 'customer') {
-            await supabase.from('customers').insert({ user_id: user.id });
-          } else {
-            await supabase.from('agents').insert({ user_id: user.id });
-          }
+          await supabase.from('profiles').update({ phone: document.getElementById('signup-phone').value, agreed_terms: true, agreed_privacy: true, agreed_marketing: document.getElementById('agree-marketing').checked }).eq('id', user.id);
+          if (selectedRole === 'customer') await supabase.from('customers').insert({ user_id: user.id });
+          else await supabase.from('agents').insert({ user_id: user.id });
         }
-
         location.href = '/dashboard.html';
-      } catch (err) {
-        showError(err.message);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = '회원가입';
-      }
+      } catch (err) { showError(err.message); }
+      finally { btn.disabled = false; btn.textContent = '회원가입'; }
     }
   </script>
 </body>
