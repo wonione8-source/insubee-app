@@ -31,13 +31,11 @@
     <h1 class="page-title">설계사 찾기</h1>
     <p class="page-subtitle">지역, 전문분야로 나에게 맞는 보험설계사를 찾아보세요</p>
 
-    <!-- 검색 -->
     <div class="search-bar">
       <i class="ti ti-search"></i>
       <input type="text" class="form-input" id="search-input" placeholder="이름, 보험사로 검색" oninput="debounceSearch()">
     </div>
 
-    <!-- 필터 -->
     <div class="filter-bar" id="filter-bar">
       <div class="chip active" data-filter="all" onclick="filterBy('all')">전체</div>
       <div class="chip" data-filter="건강보험" onclick="filterBy('건강보험')">건강보험</div>
@@ -47,14 +45,12 @@
       <div class="chip" data-filter="연금보험" onclick="filterBy('연금보험')">연금보험</div>
     </div>
 
-    <!-- 지역 필터 -->
     <div style="margin-bottom:20px">
       <select class="form-input" id="region-select" onchange="loadAgents()" style="font-size:14px;padding:10px 14px">
         <option value="">전체 지역</option>
       </select>
     </div>
 
-    <!-- 설계사 목록 -->
     <div id="agents-list">
       <div class="spinner"></div>
     </div>
@@ -86,174 +82,129 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
   <script>
-    let currentFilter = 'all';
-    let searchTimeout;
-    let isLoggedIn = false;
+    var currentFilter = 'all';
+    var searchTimeout;
+    var isLoggedIn = false;
 
-    function toggleMobileMenu() { const m = document.getElementById('mobileMenu'); m.style.display = m.style.display === 'none' || !m.style.display ? 'block' : 'none'; }
-    document.querySelectorAll('#mobileMenu a').forEach(l => l.addEventListener('click', () => document.getElementById('mobileMenu').style.display = 'none'));
+    function toggleMobileMenu() { var m = document.getElementById('mobileMenu'); m.style.display = m.style.display === 'none' || !m.style.display ? 'block' : 'none'; }
+    document.querySelectorAll('#mobileMenu a').forEach(function(l) { l.addEventListener('click', function() { document.getElementById('mobileMenu').style.display = 'none'; }); });
 
-    // === 빈 상태 HTML (재사용) ===
     function emptyStateHTML(detail) {
-      return `
-        <div class="empty-state" style="padding:60px 20px;text-align:center">
-          <div style="font-size:56px;margin-bottom:16px">🐝</div>
-          <p style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:8px">아직 등록된 설계사가 없습니다</p>
-          <p style="font-size:14px;color:var(--gray-500);line-height:1.7;margin-bottom:24px">
-            인슈비는 현재 사전등록 단계입니다.<br>
-            보험설계사로 먼저 등록하고 고객을 만나보세요!
-          </p>
-          ${detail ? `<p style="font-size:12px;color:#aaa;margin-bottom:16px">${detail}</p>` : ''}
-          <a href="login.html" class="btn btn-primary btn-lg">무료 사전등록 하기</a>
-        </div>`;
+      return '<div class="empty-state" style="padding:60px 20px;text-align:center">' +
+        '<div style="font-size:56px;margin-bottom:16px">🐝</div>' +
+        '<p style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:8px">아직 등록된 설계사가 없습니다</p>' +
+        '<p style="font-size:14px;color:var(--gray-500);line-height:1.7;margin-bottom:24px">인슈비는 현재 사전등록 단계입니다.<br>보험설계사로 먼저 등록하고 고객을 만나보세요!</p>' +
+        (detail ? '<p style="font-size:12px;color:#aaa;margin-bottom:16px">' + detail + '</p>' : '') +
+        '<a href="login.html" class="btn btn-primary btn-lg">무료 사전등록 하기</a></div>';
     }
 
-    // === 페이지 초기화 (try/catch로 감싸서 절대 멈추지 않음) ===
-    (async () => {
+    (async function() {
       try {
-        const user = await getCurrentUser();
+        var user = await getCurrentUser();
         if (user) {
           isLoggedIn = true;
-          const navAuth = document.getElementById('nav-auth');
-          const mobAuth = document.getElementById('mobile-auth');
+          var navAuth = document.getElementById('nav-auth');
+          var mobAuth = document.getElementById('mobile-auth');
           if (navAuth) { navAuth.textContent = '대시보드'; navAuth.href = 'dashboard.html'; }
           if (mobAuth) { mobAuth.textContent = '대시보드 →'; mobAuth.href = 'dashboard.html'; }
         }
       } catch (e) { console.warn('[agents] auth check skipped:', e.message); }
 
       try {
-        const params = new URLSearchParams(location.search);
-        const specialty = params.get('specialty');
-        if (specialty) {
-          currentFilter = specialty;
-          document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.filter === specialty));
-        }
-
-        const select = document.getElementById('region-select');
-        REGIONS.forEach(r => { const opt = document.createElement('option'); opt.value = r; opt.textContent = r; select.appendChild(opt); });
+        var select = document.getElementById('region-select');
+        REGIONS.forEach(function(r) { var opt = document.createElement('option'); opt.value = r; opt.textContent = r; select.appendChild(opt); });
       } catch (e) { console.warn('[agents] filter init error:', e.message); }
 
-      // 무조건 loadAgents 호출
       loadAgents();
     })();
 
     function filterBy(filter) {
       currentFilter = filter;
-      document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.filter === filter));
+      document.querySelectorAll('.chip').forEach(function(c) { c.classList.toggle('active', c.dataset.filter === filter); });
       loadAgents();
     }
     function debounceSearch() { clearTimeout(searchTimeout); searchTimeout = setTimeout(loadAgents, 300); }
 
     async function loadAgents() {
-      const container = document.getElementById('agents-list');
+      var container = document.getElementById('agents-list');
       container.innerHTML = '<div class="spinner"></div>';
 
-      // Supabase 미연결이면 즉시 빈 상태
       if (!supabaseReady) {
         container.innerHTML = emptyStateHTML(supabaseError || '서버에 연결할 수 없습니다');
         return;
       }
 
-      const filters = {};
+      var filters = {};
       if (currentFilter !== 'all') filters.specialty = currentFilter;
-      const search = document.getElementById('search-input').value.trim();
+      var search = document.getElementById('search-input').value.trim();
       if (search) filters.search = search;
-      const region = document.getElementById('region-select').value;
+      var region = document.getElementById('region-select').value;
       if (region) filters.region_sido = region;
 
       try {
-        const agents = await getAgents(filters);
-        if (agents.length === 0) {
-          container.innerHTML = emptyStateHTML();
-          return;
-        }
-        container.innerHTML = agents.map(a => `
-          <div class="agent-card" onclick="showAgentDetail('${a.id}')">
-            <div class="agent-avatar">${(a.profiles?.name || '?')[0]}</div>
-            <div class="agent-info">
-              <div style="display:flex;align-items:center;gap:6px">
-                <span class="agent-name">${a.profiles?.name || '설계사'}</span>
-                ${a.is_premium ? '<span class="premium-badge">★ Premium</span>' : ''}
-              </div>
-              <div class="agent-company">${a.company || '소속 미등록'}</div>
-              <div class="agent-meta">
-                <span class="rating"><i class="ti ti-star-filled"></i> ${a.avg_rating?.toFixed(1) || '0.0'} <span style="color:var(--gray-400)">(${a.review_count || 0})</span></span>
-                <span><i class="ti ti-map-pin"></i> ${a.region_sido || '전국'}</span>
-                <span><i class="ti ti-clock"></i> ${a.experience_years || 0}년</span>
-              </div>
-              ${a.specialties?.length ? `<div class="agent-specialty">${a.specialties.slice(0, 4).map(s => `<span>${s}</span>`).join('')}</div>` : ''}
-            </div>
-          </div>
-        `).join('');
+        var agents = await getAgents(filters);
+        if (agents.length === 0) { container.innerHTML = emptyStateHTML(); return; }
+        container.innerHTML = agents.map(function(a) {
+          return '<div class="agent-card" onclick="showAgentDetail(\'' + a.id + '\')">' +
+            '<div class="agent-avatar">' + ((a.profiles && a.profiles.name) || '?')[0] + '</div>' +
+            '<div class="agent-info">' +
+            '<div style="display:flex;align-items:center;gap:6px"><span class="agent-name">' + ((a.profiles && a.profiles.name) || '설계사') + '</span>' +
+            (a.is_premium ? '<span class="premium-badge">★ Premium</span>' : '') + '</div>' +
+            '<div class="agent-company">' + (a.company || '소속 미등록') + '</div>' +
+            '<div class="agent-meta"><span class="rating"><i class="ti ti-star-filled"></i> ' + (a.avg_rating ? a.avg_rating.toFixed(1) : '0.0') + ' <span style="color:var(--gray-400)">(' + (a.review_count || 0) + ')</span></span>' +
+            '<span><i class="ti ti-map-pin"></i> ' + (a.region_sido || '전국') + '</span>' +
+            '<span><i class="ti ti-clock"></i> ' + (a.experience_years || 0) + '년</span></div>' +
+            (a.specialties && a.specialties.length ? '<div class="agent-specialty">' + a.specialties.slice(0,4).map(function(s){return '<span>'+s+'</span>';}).join('') + '</div>' : '') +
+            '</div></div>';
+        }).join('');
       } catch (err) {
-        const detail = err.message === 'DB_NOT_READY'
-          ? 'DB 테이블이 아직 생성되지 않았습니다'
-          : err.message;
+        var detail = err.message === 'DB_NOT_READY' ? 'DB 테이블이 아직 생성되지 않았습니다' : err.message;
         container.innerHTML = emptyStateHTML(detail);
         console.error('[agents] loadAgents error:', err);
       }
     }
 
     async function showAgentDetail(agentId) {
-      const modal = document.getElementById('agent-modal');
-      const content = document.getElementById('agent-detail-content');
+      var modal = document.getElementById('agent-modal');
+      var content = document.getElementById('agent-detail-content');
       content.innerHTML = '<div class="spinner"></div>';
       modal.classList.add('show');
       try {
-        const agent = await getAgentDetail(agentId);
-        const reviews = await getAgentReviews(agentId);
-        content.innerHTML = `
-          <div style="text-align:center;margin-bottom:20px">
-            <div class="profile-avatar" style="width:72px;height:72px;font-size:28px">${(agent.profiles?.name || '?')[0]}</div>
-            <h2 style="font-size:20px;font-weight:800">${agent.profiles?.name || '설계사'}</h2>
-            <p class="text-sm text-muted">${agent.company || '소속 미등록'} · ${agent.region_sido || '전국'}</p>
-            ${agent.is_premium ? '<span class="premium-badge mt-8" style="display:inline-flex">★ Premium 설계사</span>' : ''}
-          </div>
-          <div class="detail-info-grid">
-            <div class="detail-info-item"><div class="label">경력</div><div class="value">${agent.experience_years || 0}년</div></div>
-            <div class="detail-info-item"><div class="label">평점</div><div class="value" style="color:var(--warning)">★ ${agent.avg_rating?.toFixed(1) || '0.0'} <span style="font-weight:400;font-size:12px;color:var(--gray-400)">(${agent.review_count || 0}건)</span></div></div>
-            <div class="detail-info-item"><div class="label">총 상담</div><div class="value">${agent.total_consultations || 0}건</div></div>
-            <div class="detail-info-item"><div class="label">계약 체결</div><div class="value">${agent.total_contracts || 0}건</div></div>
-          </div>
-          ${agent.specialties?.length ? `<div class="mb-16"><div class="form-label">전문 분야</div><div class="chip-group">${agent.specialties.map(s => `<span class="chip active" style="cursor:default">${s}</span>`).join('')}</div></div>` : ''}
-          ${agent.bio ? `<div class="mb-16"><div class="form-label">자기소개</div><p style="font-size:14px;color:var(--gray-700);line-height:1.7">${agent.bio}</p></div>` : ''}
-          <button class="btn btn-navy btn-block btn-lg mb-16" onclick="${isLoggedIn ? `openRequestForm('${agent.id}', '${agent.profiles?.name || ''}')` : `location.href='login.html'`}">
-            <i class="ti ti-message-plus"></i> ${isLoggedIn ? '상담 요청하기' : '로그인 후 상담 요청'}
-          </button>
-          ${reviews.length > 0 ? `<div class="form-label">리뷰 (${reviews.length}건)</div>${reviews.map(r => `
-            <div class="review-item">
-              <div class="review-header"><span style="font-weight:600;font-size:14px">${r.customers?.profiles?.name || '고객'}</span><span class="review-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</span></div>
-              ${r.content ? `<p style="font-size:13px;color:var(--gray-600)">${r.content}</p>` : ''}
-              <div class="text-sm text-muted mt-8">${timeAgo(r.created_at)}</div>
-            </div>`).join('')}` : ''}
-          <button class="btn btn-outline btn-block mt-16" onclick="closeModal()">닫기</button>`;
-      } catch (err) { content.innerHTML = '<div class="empty-state"><p>정보를 불러올 수 없습니다</p></div>'; console.error(err); }
+        var agent = await getAgentDetail(agentId);
+        var reviews = await getAgentReviews(agentId);
+        var name = (agent.profiles && agent.profiles.name) || '설계사';
+        content.innerHTML =
+          '<div style="text-align:center;margin-bottom:20px"><div class="profile-avatar" style="width:72px;height:72px;font-size:28px">' + name[0] + '</div>' +
+          '<h2 style="font-size:20px;font-weight:800">' + name + '</h2>' +
+          '<p class="text-sm text-muted">' + (agent.company || '소속 미등록') + ' · ' + (agent.region_sido || '전국') + '</p>' +
+          (agent.is_premium ? '<span class="premium-badge mt-8" style="display:inline-flex">★ Premium 설계사</span>' : '') + '</div>' +
+          '<div class="detail-info-grid"><div class="detail-info-item"><div class="label">경력</div><div class="value">' + (agent.experience_years || 0) + '년</div></div>' +
+          '<div class="detail-info-item"><div class="label">평점</div><div class="value" style="color:var(--warning)">★ ' + (agent.avg_rating ? agent.avg_rating.toFixed(1) : '0.0') + '</div></div>' +
+          '<div class="detail-info-item"><div class="label">총 상담</div><div class="value">' + (agent.total_consultations || 0) + '건</div></div>' +
+          '<div class="detail-info-item"><div class="label">계약 체결</div><div class="value">' + (agent.total_contracts || 0) + '건</div></div></div>' +
+          (agent.bio ? '<div class="mb-16"><div class="form-label">자기소개</div><p style="font-size:14px;color:var(--gray-700);line-height:1.7">' + agent.bio + '</p></div>' : '') +
+          '<button class="btn btn-navy btn-block btn-lg mb-16" onclick="' + (isLoggedIn ? "openRequestForm('" + agent.id + "','" + name + "')" : "location.href='login.html'") + '"><i class="ti ti-message-plus"></i> ' + (isLoggedIn ? '상담 요청하기' : '로그인 후 상담 요청') + '</button>' +
+          '<button class="btn btn-outline btn-block mt-16" onclick="closeModal()">닫기</button>';
+      } catch (err) { content.innerHTML = '<div class="empty-state"><p>정보를 불러올 수 없습니다</p></div>'; }
     }
 
     function openRequestForm(agentId, agentName) {
-      const content = document.getElementById('agent-detail-content');
-      content.innerHTML = `
-        <h3 style="font-size:18px;font-weight:700;margin-bottom:4px">${agentName} 설계사에게</h3>
-        <p class="text-sm text-muted mb-24">상담 요청 보내기</p>
-        <div id="req-form-wrap">
-          <div class="form-group"><label class="form-label">관심 보험 종류</label>
-            <select class="form-input" id="req-type" required>
-              <option value="">선택하세요</option><option value="생명보험">생명보험</option><option value="건강보험">건강보험 (실손/암)</option>
-              <option value="자동차보험">자동차보험</option><option value="손해보험">손해보험</option><option value="연금보험">연금·저축보험</option><option value="기타">기타</option>
-            </select></div>
-          <div class="form-group"><label class="form-label">요청 메시지</label>
-            <textarea class="form-input" id="req-message" placeholder="상담 받고 싶은 내용을 간단히 적어주세요"></textarea></div>
-          <div class="form-group"><label class="form-label">선호 시간대</label>
-            <input type="text" class="form-input" id="req-time" placeholder="예: 평일 오후 2시~5시"></div>
-          <button type="button" class="btn btn-navy btn-block btn-lg" id="req-submit-btn" onclick="submitRequest('${agentId}')"><i class="ti ti-send"></i> 요청 보내기</button>
-          <button type="button" class="btn btn-outline btn-block mt-8" onclick="showAgentDetail('${agentId}')">돌아가기</button>
-        </div>`;
+      var content = document.getElementById('agent-detail-content');
+      content.innerHTML =
+        '<h3 style="font-size:18px;font-weight:700;margin-bottom:4px">' + agentName + ' 설계사에게</h3>' +
+        '<p class="text-sm text-muted mb-24">상담 요청 보내기</p>' +
+        '<div class="form-group"><label class="form-label">관심 보험 종류</label>' +
+        '<select class="form-input" id="req-type"><option value="">선택하세요</option><option value="생명보험">생명보험</option><option value="건강보험">건강보험 (실손/암)</option><option value="자동차보험">자동차보험</option><option value="손해보험">손해보험</option><option value="연금보험">연금·저축보험</option><option value="기타">기타</option></select></div>' +
+        '<div class="form-group"><label class="form-label">요청 메시지</label><textarea class="form-input" id="req-message" placeholder="상담 받고 싶은 내용을 간단히 적어주세요"></textarea></div>' +
+        '<div class="form-group"><label class="form-label">선호 시간대</label><input type="text" class="form-input" id="req-time" placeholder="예: 평일 오후 2시~5시"></div>' +
+        '<button type="button" class="btn btn-navy btn-block btn-lg" id="req-submit-btn" onclick="submitRequest(\'' + agentId + '\')"><i class="ti ti-send"></i> 요청 보내기</button>' +
+        '<button type="button" class="btn btn-outline btn-block mt-8" onclick="showAgentDetail(\'' + agentId + '\')">돌아가기</button>';
     }
 
     async function submitRequest(agentId) {
-      const typeEl = document.getElementById('req-type');
+      var typeEl = document.getElementById('req-type');
       if (!typeEl.value) { showToast('보험 종류를 선택해주세요'); return; }
-      const btn = document.getElementById('req-submit-btn'); btn.disabled = true; btn.innerHTML = '전송 중...';
+      var btn = document.getElementById('req-submit-btn'); btn.disabled = true; btn.innerHTML = '전송 중...';
       try {
         await createMatchingRequest(agentId, {
           insurance_type: typeEl.value,
@@ -267,7 +218,7 @@
     }
 
     function closeModal() { document.getElementById('agent-modal').classList.remove('show'); }
-    document.getElementById('agent-modal').addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal(); });
+    document.getElementById('agent-modal').addEventListener('click', function(e) { if (e.target === e.currentTarget) closeModal(); });
   </script>
 </body>
 </html>
