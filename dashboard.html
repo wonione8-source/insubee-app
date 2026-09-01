@@ -101,53 +101,69 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
   <script>
-    function toggleMobileMenu() { const m = document.getElementById('mobileMenu'); m.style.display = m.style.display === 'none' || !m.style.display ? 'block' : 'none'; }
-    document.querySelectorAll('#mobileMenu a').forEach(l => l.addEventListener('click', () => document.getElementById('mobileMenu').style.display = 'none'));
+    function toggleMobileMenu() { var m = document.getElementById('mobileMenu'); m.style.display = m.style.display === 'none' || !m.style.display ? 'block' : 'none'; }
+    document.querySelectorAll('#mobileMenu a').forEach(function(l) { l.addEventListener('click', function() { document.getElementById('mobileMenu').style.display = 'none'; }); });
 
-    (async () => {
-      const user = await requireAuth(); if (!user) return;
-      const profile = await getCurrentProfile(); if (!profile) return;
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('content').classList.remove('hidden');
+    (async function() {
+      try {
+        var user = await requireAuth(); if (!user) return;
+        var profile = await getCurrentProfile();
+        if (!profile) {
+          document.getElementById('loading').style.display = 'none';
+          showPageError('프로필 정보를 불러올 수 없습니다. 다시 로그인해주세요.');
+          return;
+        }
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('content').classList.remove('hidden');
 
-      if (profile.role === 'customer') {
-        document.getElementById('customer-dashboard').classList.remove('hidden');
-        document.getElementById('greeting').textContent = `${profile.name}님, 안녕하세요!`;
-        loadCustomerDashboard();
-      } else if (profile.role === 'agent') {
-        document.getElementById('agent-dashboard').classList.remove('hidden');
-        document.getElementById('agent-greeting').textContent = `${profile.name} 설계사님!`;
-        loadAgentDashboard();
+        if (profile.role === 'customer') {
+          document.getElementById('customer-dashboard').classList.remove('hidden');
+          document.getElementById('greeting').textContent = profile.name + '님, 안녕하세요!';
+          loadCustomerDashboard();
+        } else if (profile.role === 'agent') {
+          document.getElementById('agent-dashboard').classList.remove('hidden');
+          document.getElementById('agent-greeting').textContent = profile.name + ' 설계사님!';
+          loadAgentDashboard();
+        }
+
+        subscribeToNotifications(user.id, function(notif) { showToast(notif.title); });
+      } catch (e) {
+        document.getElementById('loading').style.display = 'none';
+        showPageError('대시보드 로딩 실패: ' + e.message);
       }
-
-      subscribeToNotifications(user.id, (notif) => showToast(notif.title));
     })();
 
     async function loadCustomerDashboard() {
       try {
-        const requests = await getMyRequests();
-        document.getElementById('stat-pending').textContent = requests.filter(r => r.status === 'pending').length;
-        document.getElementById('stat-progress').textContent = requests.filter(r => ['accepted','in_progress'].includes(r.status)).length;
-        document.getElementById('stat-completed').textContent = requests.filter(r => r.status === 'completed').length;
-        const container = document.getElementById('recent-requests');
-        const recent = requests.slice(0, 3);
+        var requests = await getMyRequests();
+        document.getElementById('stat-pending').textContent = requests.filter(function(r) { return r.status === 'pending'; }).length;
+        document.getElementById('stat-progress').textContent = requests.filter(function(r) { return r.status === 'accepted' || r.status === 'in_progress'; }).length;
+        document.getElementById('stat-completed').textContent = requests.filter(function(r) { return r.status === 'completed'; }).length;
+        var container = document.getElementById('recent-requests');
+        var recent = requests.slice(0, 3);
         if (recent.length === 0) { container.innerHTML = '<div class="empty-state"><i class="ti ti-message-off"></i><p>아직 상담 요청이 없습니다</p><a href="agents.html" class="btn btn-secondary btn-sm mt-16">설계사 찾아보기</a></div>'; return; }
-        container.innerHTML = recent.map(r => `<div class="card" onclick="location.href='my-requests.html'"><div class="flex-between"><div><div style="font-weight:700;font-size:15px">${r.agents.profiles.name} 설계사</div><div class="text-sm text-muted">${r.agents.company || ''} · ${r.insurance_type || '보험상담'}</div></div><span class="status ${getStatusClass(r.status)}">${getStatusLabel(r.status)}</span></div><div class="text-sm text-muted mt-8">${timeAgo(r.created_at)}</div></div>`).join('');
+        container.innerHTML = recent.map(function(r) {
+          return '<div class="card" onclick="location.href=\'my-requests.html\'"><div class="flex-between"><div><div style="font-weight:700;font-size:15px">' + r.agents.profiles.name + ' 설계사</div><div class="text-sm text-muted">' + (r.agents.company || '') + ' · ' + (r.insurance_type || '보험상담') + '</div></div><span class="status ' + getStatusClass(r.status) + '">' + getStatusLabel(r.status) + '</span></div><div class="text-sm text-muted mt-8">' + timeAgo(r.created_at) + '</div></div>';
+        }).join('');
       } catch (err) { console.error(err); }
     }
 
     async function loadAgentDashboard() {
       try {
-        const requests = await getReceivedRequests();
-        const user = await getCurrentUser();
-        const { data: agent } = await supabase.from('agents').select('*').eq('user_id', user.id).single();
-        document.getElementById('astat-new').textContent = requests.filter(r => r.status === 'pending').length;
-        document.getElementById('astat-consult').textContent = agent?.total_consultations || 0;
-        document.getElementById('astat-rating').textContent = agent?.avg_rating?.toFixed(1) || '0.0';
-        const container = document.getElementById('agent-recent-requests');
-        const recent = requests.filter(r => r.status === 'pending').slice(0, 3);
+        var requests = await getReceivedRequests();
+        var user = await getCurrentUser();
+        var agentResult = await sb.from('agents').select('*').eq('user_id', user.id).single();
+        var agent = agentResult.data;
+        document.getElementById('astat-new').textContent = requests.filter(function(r) { return r.status === 'pending'; }).length;
+        document.getElementById('astat-consult').textContent = (agent && agent.total_consultations) || 0;
+        document.getElementById('astat-rating').textContent = (agent && agent.avg_rating) ? agent.avg_rating.toFixed(1) : '0.0';
+        var container = document.getElementById('agent-recent-requests');
+        var recent = requests.filter(function(r) { return r.status === 'pending'; }).slice(0, 3);
         if (recent.length === 0) { container.innerHTML = '<div class="empty-state"><i class="ti ti-inbox"></i><p>새로운 상담 요청이 없습니다</p></div>'; return; }
-        container.innerHTML = recent.map(r => `<div class="card" onclick="location.href='received-requests.html'"><div class="flex-between"><div><div style="font-weight:700;font-size:15px">${r.customers.profiles.name} 고객</div><div class="text-sm text-muted">${r.insurance_type || '보험상담'} · ${r.customers.region_sido || ''}</div></div><span class="status status-pending">새 요청</span></div>${r.message ? `<div class="text-sm mt-8" style="color:var(--gray-600)">"${r.message.slice(0, 60)}${r.message.length > 60 ? '...' : ''}"</div>` : ''}<div class="text-sm text-muted mt-8">${timeAgo(r.created_at)}</div></div>`).join('');
+        container.innerHTML = recent.map(function(r) {
+          var msg = r.message ? '<div class="text-sm mt-8" style="color:var(--gray-600)">"' + r.message.slice(0, 60) + (r.message.length > 60 ? '...' : '') + '"</div>' : '';
+          return '<div class="card" onclick="location.href=\'received-requests.html\'"><div class="flex-between"><div><div style="font-weight:700;font-size:15px">' + r.customers.profiles.name + ' 고객</div><div class="text-sm text-muted">' + (r.insurance_type || '보험상담') + ' · ' + (r.customers.region_sido || '') + '</div></div><span class="status status-pending">새 요청</span></div>' + msg + '<div class="text-sm text-muted mt-8">' + timeAgo(r.created_at) + '</div></div>';
+        }).join('');
       } catch (err) { console.error(err); }
     }
   </script>
