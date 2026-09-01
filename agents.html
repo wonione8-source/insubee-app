@@ -93,27 +93,47 @@
     function toggleMobileMenu() { const m = document.getElementById('mobileMenu'); m.style.display = m.style.display === 'none' || !m.style.display ? 'block' : 'none'; }
     document.querySelectorAll('#mobileMenu a').forEach(l => l.addEventListener('click', () => document.getElementById('mobileMenu').style.display = 'none'));
 
+    // === 빈 상태 HTML (재사용) ===
+    function emptyStateHTML(detail) {
+      return `
+        <div class="empty-state" style="padding:60px 20px;text-align:center">
+          <div style="font-size:56px;margin-bottom:16px">🐝</div>
+          <p style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:8px">아직 등록된 설계사가 없습니다</p>
+          <p style="font-size:14px;color:var(--gray-500);line-height:1.7;margin-bottom:24px">
+            인슈비는 현재 사전등록 단계입니다.<br>
+            보험설계사로 먼저 등록하고 고객을 만나보세요!
+          </p>
+          ${detail ? `<p style="font-size:12px;color:#aaa;margin-bottom:16px">${detail}</p>` : ''}
+          <a href="login.html" class="btn btn-primary btn-lg">무료 사전등록 하기</a>
+        </div>`;
+    }
+
+    // === 페이지 초기화 (try/catch로 감싸서 절대 멈추지 않음) ===
     (async () => {
-      // 로그인 여부 확인 (비로그인도 접근 가능)
-      const user = await getCurrentUser();
-      if (user) {
-        isLoggedIn = true;
-        document.getElementById('nav-auth').textContent = '대시보드';
-        document.getElementById('nav-auth').href = 'dashboard.html';
-        document.getElementById('mobile-auth').textContent = '대시보드 →';
-        document.getElementById('mobile-auth').href = 'dashboard.html';
-      }
+      try {
+        const user = await getCurrentUser();
+        if (user) {
+          isLoggedIn = true;
+          const navAuth = document.getElementById('nav-auth');
+          const mobAuth = document.getElementById('mobile-auth');
+          if (navAuth) { navAuth.textContent = '대시보드'; navAuth.href = 'dashboard.html'; }
+          if (mobAuth) { mobAuth.textContent = '대시보드 →'; mobAuth.href = 'dashboard.html'; }
+        }
+      } catch (e) { console.warn('[agents] auth check skipped:', e.message); }
 
-      const params = new URLSearchParams(location.search);
-      const specialty = params.get('specialty');
-      if (specialty) {
-        currentFilter = specialty;
-        document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.filter === specialty));
-      }
+      try {
+        const params = new URLSearchParams(location.search);
+        const specialty = params.get('specialty');
+        if (specialty) {
+          currentFilter = specialty;
+          document.querySelectorAll('.chip').forEach(c => c.classList.toggle('active', c.dataset.filter === specialty));
+        }
 
-      const select = document.getElementById('region-select');
-      REGIONS.forEach(r => { const opt = document.createElement('option'); opt.value = r; opt.textContent = r; select.appendChild(opt); });
+        const select = document.getElementById('region-select');
+        REGIONS.forEach(r => { const opt = document.createElement('option'); opt.value = r; opt.textContent = r; select.appendChild(opt); });
+      } catch (e) { console.warn('[agents] filter init error:', e.message); }
 
+      // 무조건 loadAgents 호출
       loadAgents();
     })();
 
@@ -127,6 +147,13 @@
     async function loadAgents() {
       const container = document.getElementById('agents-list');
       container.innerHTML = '<div class="spinner"></div>';
+
+      // Supabase 미연결이면 즉시 빈 상태
+      if (!supabaseReady) {
+        container.innerHTML = emptyStateHTML(supabaseError || '서버에 연결할 수 없습니다');
+        return;
+      }
+
       const filters = {};
       if (currentFilter !== 'all') filters.specialty = currentFilter;
       const search = document.getElementById('search-input').value.trim();
@@ -137,16 +164,7 @@
       try {
         const agents = await getAgents(filters);
         if (agents.length === 0) {
-          container.innerHTML = `
-            <div class="empty-state" style="padding:60px 20px">
-              <div style="font-size:56px;margin-bottom:16px">🐝</div>
-              <p style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:8px">아직 등록된 설계사가 없습니다</p>
-              <p style="font-size:14px;color:var(--gray-500);line-height:1.7;margin-bottom:24px">
-                인슈비는 현재 사전등록 단계입니다.<br>
-                보험설계사로 먼저 등록하고 고객을 만나보세요!
-              </p>
-              <a href="login.html" class="btn btn-primary btn-lg">무료 사전등록 하기</a>
-            </div>`;
+          container.innerHTML = emptyStateHTML();
           return;
         }
         container.innerHTML = agents.map(a => `
@@ -168,17 +186,11 @@
           </div>
         `).join('');
       } catch (err) {
-        container.innerHTML = `
-          <div class="empty-state" style="padding:60px 20px">
-            <div style="font-size:56px;margin-bottom:16px">🐝</div>
-            <p style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:8px">아직 등록된 설계사가 없습니다</p>
-            <p style="font-size:14px;color:var(--gray-500);line-height:1.7;margin-bottom:24px">
-              인슈비는 현재 사전등록 단계입니다.<br>
-              보험설계사로 먼저 등록하고 고객을 만나보세요!
-            </p>
-            <a href="login.html" class="btn btn-primary btn-lg">무료 사전등록 하기</a>
-          </div>`;
-        console.error(err);
+        const detail = err.message === 'DB_NOT_READY'
+          ? 'DB 테이블이 아직 생성되지 않았습니다'
+          : err.message;
+        container.innerHTML = emptyStateHTML(detail);
+        console.error('[agents] loadAgents error:', err);
       }
     }
 
@@ -223,7 +235,7 @@
       content.innerHTML = `
         <h3 style="font-size:18px;font-weight:700;margin-bottom:4px">${agentName} 설계사에게</h3>
         <p class="text-sm text-muted mb-24">상담 요청 보내기</p>
-        <form onsubmit="submitRequest(event, '${agentId}')">
+        <div id="req-form-wrap">
           <div class="form-group"><label class="form-label">관심 보험 종류</label>
             <select class="form-input" id="req-type" required>
               <option value="">선택하세요</option><option value="생명보험">생명보험</option><option value="건강보험">건강보험 (실손/암)</option>
@@ -233,16 +245,22 @@
             <textarea class="form-input" id="req-message" placeholder="상담 받고 싶은 내용을 간단히 적어주세요"></textarea></div>
           <div class="form-group"><label class="form-label">선호 시간대</label>
             <input type="text" class="form-input" id="req-time" placeholder="예: 평일 오후 2시~5시"></div>
-          <button type="submit" class="btn btn-navy btn-block btn-lg" id="req-submit-btn"><i class="ti ti-send"></i> 요청 보내기</button>
+          <button type="button" class="btn btn-navy btn-block btn-lg" id="req-submit-btn" onclick="submitRequest('${agentId}')"><i class="ti ti-send"></i> 요청 보내기</button>
           <button type="button" class="btn btn-outline btn-block mt-8" onclick="showAgentDetail('${agentId}')">돌아가기</button>
-        </form>`;
+        </div>`;
     }
 
-    async function submitRequest(e, agentId) {
-      e.preventDefault();
+    async function submitRequest(agentId) {
+      const typeEl = document.getElementById('req-type');
+      if (!typeEl.value) { showToast('보험 종류를 선택해주세요'); return; }
       const btn = document.getElementById('req-submit-btn'); btn.disabled = true; btn.innerHTML = '전송 중...';
       try {
-        await createMatchingRequest(agentId, { insurance_type: document.getElementById('req-type').value, message: document.getElementById('req-message').value, preferred_contact: 'chat', preferred_time: document.getElementById('req-time').value });
+        await createMatchingRequest(agentId, {
+          insurance_type: typeEl.value,
+          message: document.getElementById('req-message').value,
+          preferred_contact: 'chat',
+          preferred_time: document.getElementById('req-time').value
+        });
         closeModal(); showToast('상담 요청이 전송되었습니다!');
       } catch (err) { showToast(err.message); }
       finally { btn.disabled = false; btn.innerHTML = '<i class="ti ti-send"></i> 요청 보내기'; }

@@ -1,17 +1,44 @@
 /* ============================================================
    인슈비앱 (InsuBee) — Core App JS
    Supabase 클라이언트 + Auth + 유틸리티
+   v3 — 2026-09-01 전면 수정
    ============================================================ */
 
 const SUPABASE_URL = 'https://dfzhjqychbodpdwdkdab.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_1Q3qrqGccSF3F6pT1SJX6g_rQoHUbZc';
 
 // Supabase 클라이언트 초기화 (안전 체크)
-let supabase;
-if (window.supabase && window.supabase.createClient) {
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-} else {
-  console.error('Supabase library not loaded. Make sure the CDN script is before app.js.');
+let supabase = null;
+let supabaseReady = false;
+let supabaseError = null;
+
+try {
+  if (window.supabase && typeof window.supabase.createClient === 'function') {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    supabaseReady = true;
+    console.log('[InsuBee] Supabase client initialized OK');
+  } else {
+    supabaseError = 'Supabase 라이브러리가 로드되지 않았습니다.';
+    console.error('[InsuBee]', supabaseError);
+  }
+} catch (e) {
+  supabaseError = 'Supabase 초기화 실패: ' + e.message;
+  console.error('[InsuBee]', supabaseError);
+}
+
+// 페이지에 에러 표시 (사용자에게 보여줌)
+function showPageError(msg) {
+  console.error('[InsuBee Error]', msg);
+  let box = document.getElementById('page-error-box');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'page-error-box';
+    box.style.cssText = 'background:#fff3f3;color:#c00;border:1px solid #fcc;border-radius:10px;padding:14px 18px;margin:16px auto;max-width:680px;font-size:14px;line-height:1.6;word-break:break-all;';
+    const container = document.querySelector('.page-container') || document.body;
+    container.prepend(box);
+  }
+  box.innerHTML = '⚠️ ' + msg;
+  box.style.display = 'block';
 }
 
 // ========================
@@ -21,23 +48,36 @@ if (window.supabase && window.supabase.createClient) {
 async function getCurrentUser() {
   if (!supabase) return null;
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    return user;
-  } catch (e) { console.error('getCurrentUser error:', e); return null; }
+    const { data, error } = await supabase.auth.getUser();
+    if (error) { console.warn('[InsuBee] getUser error:', error.message); return null; }
+    return data?.user || null;
+  } catch (e) { console.warn('[InsuBee] getCurrentUser catch:', e.message); return null; }
+}
+
+async function getSession() {
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) return null;
+    return data?.session || null;
+  } catch (e) { return null; }
 }
 
 async function getCurrentProfile() {
   const user = await getCurrentUser();
-  if (!user) return null;
-  const { data } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-  return data;
+  if (!user || !supabase) return null;
+  try {
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+    return data;
+  } catch (e) { return null; }
 }
 
 async function signUp(email, password, name, role) {
+  if (!supabase) throw new Error('서버 연결에 실패했습니다. 페이지를 새로고침 해주세요.');
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -50,6 +90,7 @@ async function signUp(email, password, name, role) {
 }
 
 async function signIn(email, password) {
+  if (!supabase) throw new Error('서버 연결에 실패했습니다. 페이지를 새로고침 해주세요.');
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password
@@ -59,7 +100,7 @@ async function signIn(email, password) {
 }
 
 async function signOut() {
-  await supabase.auth.signOut();
+  if (supabase) await supabase.auth.signOut();
   location.href = '/login.html';
 }
 
@@ -78,6 +119,8 @@ async function requireAuth() {
 // ========================
 
 async function getAgents(filters = {}) {
+  if (!supabase) return [];
+
   let query = supabase
     .from('agents')
     .select(`
@@ -98,11 +141,19 @@ async function getAgents(filters = {}) {
   }
 
   const { data, error } = await query.limit(20);
-  if (error) throw error;
+  if (error) {
+    console.error('[InsuBee] getAgents error:', error);
+    // relation 에러 = 테이블 없음
+    if (error.message && error.message.includes('relation')) {
+      throw new Error('DB_NOT_READY');
+    }
+    throw error;
+  }
   return data || [];
 }
 
 async function getAgentDetail(agentId) {
+  if (!supabase) throw new Error('서버 연결 실패');
   const { data, error } = await supabase
     .from('agents')
     .select(`
@@ -116,6 +167,7 @@ async function getAgentDetail(agentId) {
 }
 
 async function getAgentReviews(agentId) {
+  if (!supabase) return [];
   const { data, error } = await supabase
     .from('reviews')
     .select(`
@@ -128,13 +180,13 @@ async function getAgentReviews(agentId) {
     .eq('is_visible', true)
     .order('created_at', { ascending: false })
     .limit(10);
-  if (error) throw error;
+  if (error) return [];
   return data || [];
 }
 
 async function upsertAgentProfile(agentData) {
   const user = await getCurrentUser();
-  if (!user) throw new Error('로그인이 필요합니다');
+  if (!user || !supabase) throw new Error('로그인이 필요합니다');
 
   const { data: existing } = await supabase
     .from('agents')
@@ -168,7 +220,7 @@ async function upsertAgentProfile(agentData) {
 
 async function upsertCustomerProfile(customerData) {
   const user = await getCurrentUser();
-  if (!user) throw new Error('로그인이 필요합니다');
+  if (!user || !supabase) throw new Error('로그인이 필요합니다');
 
   const { data: existing } = await supabase
     .from('customers')
@@ -202,7 +254,7 @@ async function upsertCustomerProfile(customerData) {
 
 async function createMatchingRequest(agentId, requestData) {
   const user = await getCurrentUser();
-  if (!user) throw new Error('로그인이 필요합니다');
+  if (!user || !supabase) throw new Error('로그인이 필요합니다');
 
   const { data: customer } = await supabase
     .from('customers')
@@ -224,28 +276,30 @@ async function createMatchingRequest(agentId, requestData) {
 
   if (error) throw error;
 
-  const { data: agent } = await supabase
-    .from('agents')
-    .select('user_id')
-    .eq('id', agentId)
-    .single();
+  try {
+    const { data: agent } = await supabase
+      .from('agents')
+      .select('user_id')
+      .eq('id', agentId)
+      .single();
 
-  if (agent) {
-    await supabase.from('notifications').insert({
-      user_id: agent.user_id,
-      type: 'matching_request',
-      title: '새 상담 요청이 도착했습니다',
-      body: `${requestData.insurance_type} 관련 상담을 요청했습니다.`,
-      data: { request_id: data.id }
-    });
-  }
+    if (agent) {
+      await supabase.from('notifications').insert({
+        user_id: agent.user_id,
+        type: 'matching_request',
+        title: '새 상담 요청이 도착했습니다',
+        body: `${requestData.insurance_type} 관련 상담을 요청했습니다.`,
+        data: { request_id: data.id }
+      });
+    }
+  } catch (e) { console.warn('[InsuBee] notification insert error (non-fatal):', e); }
 
   return data;
 }
 
 async function getMyRequests() {
   const user = await getCurrentUser();
-  if (!user) return [];
+  if (!user || !supabase) return [];
 
   const { data: customer } = await supabase
     .from('customers')
@@ -267,13 +321,13 @@ async function getMyRequests() {
     .eq('customer_id', customer.id)
     .order('created_at', { ascending: false });
 
-  if (error) throw error;
+  if (error) return [];
   return data || [];
 }
 
 async function getReceivedRequests() {
   const user = await getCurrentUser();
-  if (!user) return [];
+  if (!user || !supabase) return [];
 
   const { data: agent } = await supabase
     .from('agents')
@@ -296,11 +350,12 @@ async function getReceivedRequests() {
     .eq('agent_id', agent.id)
     .order('created_at', { ascending: false });
 
-  if (error) throw error;
+  if (error) return [];
   return data || [];
 }
 
 async function respondToRequest(requestId, status, message) {
+  if (!supabase) throw new Error('서버 연결 실패');
   const { data, error } = await supabase
     .from('matching_requests')
     .update({
@@ -314,26 +369,28 @@ async function respondToRequest(requestId, status, message) {
 
   if (error) throw error;
 
-  const { data: request } = await supabase
-    .from('matching_requests')
-    .select('customer_id, customers!inner(user_id)')
-    .eq('id', requestId)
-    .single();
+  try {
+    const { data: request } = await supabase
+      .from('matching_requests')
+      .select('customer_id, customers!inner(user_id)')
+      .eq('id', requestId)
+      .single();
 
-  if (request) {
-    const notifType = status === 'accepted' ? 'request_accepted' : 'request_rejected';
-    const notifTitle = status === 'accepted'
-      ? '상담 요청이 수락되었습니다!'
-      : '상담 요청이 거절되었습니다.';
+    if (request) {
+      const notifType = status === 'accepted' ? 'request_accepted' : 'request_rejected';
+      const notifTitle = status === 'accepted'
+        ? '상담 요청이 수락되었습니다!'
+        : '상담 요청이 거절되었습니다.';
 
-    await supabase.from('notifications').insert({
-      user_id: request.customers.user_id,
-      type: notifType,
-      title: notifTitle,
-      body: message || '',
-      data: { request_id: requestId }
-    });
-  }
+      await supabase.from('notifications').insert({
+        user_id: request.customers.user_id,
+        type: notifType,
+        title: notifTitle,
+        body: message || '',
+        data: { request_id: requestId }
+      });
+    }
+  } catch (e) { console.warn('[InsuBee] notification error (non-fatal):', e); }
 
   return data;
 }
@@ -344,7 +401,7 @@ async function respondToRequest(requestId, status, message) {
 
 async function getNotifications() {
   const user = await getCurrentUser();
-  if (!user) return [];
+  if (!user || !supabase) return [];
 
   const { data, error } = await supabase
     .from('notifications')
@@ -353,13 +410,13 @@ async function getNotifications() {
     .order('created_at', { ascending: false })
     .limit(30);
 
-  if (error) throw error;
+  if (error) return [];
   return data || [];
 }
 
 async function getUnreadCount() {
   const user = await getCurrentUser();
-  if (!user) return 0;
+  if (!user || !supabase) return 0;
 
   const { count, error } = await supabase
     .from('notifications')
@@ -372,6 +429,7 @@ async function getUnreadCount() {
 }
 
 async function markNotificationRead(notifId) {
+  if (!supabase) return;
   await supabase
     .from('notifications')
     .update({ is_read: true, read_at: new Date().toISOString() })
@@ -380,7 +438,7 @@ async function markNotificationRead(notifId) {
 
 async function markAllNotificationsRead() {
   const user = await getCurrentUser();
-  if (!user) return;
+  if (!user || !supabase) return;
 
   await supabase
     .from('notifications')
@@ -465,13 +523,15 @@ function getStatusClass(status) {
 
 async function getInsuranceCategories() {
   if (!supabase) return [];
-  const { data, error } = await supabase
-    .from('insurance_categories')
-    .select('*')
-    .eq('is_active', true)
-    .order('sort_order');
-  if (error) return [];
-  return data || [];
+  try {
+    const { data, error } = await supabase
+      .from('insurance_categories')
+      .select('*')
+      .eq('is_active', true)
+      .order('sort_order');
+    if (error) return [];
+    return data || [];
+  } catch (e) { return []; }
 }
 
 const REGIONS = [
