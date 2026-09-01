@@ -34,7 +34,6 @@
     </div>
 
     <div id="error-box" class="error-msg"></div>
-    <!-- 성공 메시지 박스 -->
     <div id="success-box" style="display:none;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:10px;padding:14px 18px;margin-bottom:16px;font-size:14px;line-height:1.6;text-align:center"></div>
 
     <div class="tab-group">
@@ -46,11 +45,11 @@
     <div id="login-form">
       <div class="form-group">
         <label class="form-label">이메일</label>
-        <input type="email" class="form-input" id="login-email" placeholder="이메일 주소 입력" required>
+        <input type="email" class="form-input" id="login-email" placeholder="이메일 주소 입력">
       </div>
       <div class="form-group">
         <label class="form-label">비밀번호</label>
-        <input type="password" class="form-input" id="login-pw" placeholder="비밀번호 입력" required>
+        <input type="password" class="form-input" id="login-pw" placeholder="비밀번호 입력">
       </div>
       <button type="button" class="btn btn-navy btn-block btn-lg" id="login-btn" onclick="handleLogin()">로그인</button>
     </div>
@@ -74,19 +73,19 @@
       </div>
       <div class="form-group">
         <label class="form-label">이름</label>
-        <input type="text" class="form-input" id="signup-name" placeholder="실명 입력" required>
+        <input type="text" class="form-input" id="signup-name" placeholder="실명 입력">
       </div>
       <div class="form-group">
         <label class="form-label">이메일</label>
-        <input type="email" class="form-input" id="signup-email" placeholder="이메일 주소 입력" required>
+        <input type="email" class="form-input" id="signup-email" placeholder="이메일 주소 입력">
       </div>
       <div class="form-group">
         <label class="form-label">비밀번호</label>
-        <input type="password" class="form-input" id="signup-pw" placeholder="8자 이상" minlength="8" required>
+        <input type="password" class="form-input" id="signup-pw" placeholder="8자 이상" minlength="8">
       </div>
       <div class="form-group">
         <label class="form-label">비밀번호 확인</label>
-        <input type="password" class="form-input" id="signup-pw2" placeholder="비밀번호 다시 입력" required>
+        <input type="password" class="form-input" id="signup-pw2" placeholder="비밀번호 다시 입력">
       </div>
       <div class="form-group">
         <label class="form-label">휴대폰 번호</label>
@@ -94,7 +93,7 @@
       </div>
       <div class="form-group" style="margin-top:20px">
         <div class="terms-check">
-          <input type="checkbox" id="agree-terms" required>
+          <input type="checkbox" id="agree-terms">
           <label for="agree-terms"><a href="terms.html" target="_blank">이용약관</a> 및 <a href="privacy.html" target="_blank">개인정보처리방침</a>에 동의합니다 (필수)</label>
         </div>
         <div class="terms-check">
@@ -131,75 +130,63 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
   <script>
-    let selectedRole = 'customer';
+    var selectedRole = 'customer';
 
-    // 이미 로그인 상태면 대시보드로
-    (async () => {
+    (async function() {
       try {
-        const user = await getCurrentUser();
+        var user = await getCurrentUser();
         if (user) location.href = '/dashboard.html';
       } catch (e) { /* 무시 */ }
     })();
 
-    function toggleMobileMenu() { const m = document.getElementById('mobileMenu'); m.style.display = m.style.display === 'none' || !m.style.display ? 'block' : 'none'; }
-    document.querySelectorAll('#mobileMenu a').forEach(l => l.addEventListener('click', () => document.getElementById('mobileMenu').style.display = 'none'));
+    function toggleMobileMenu() { var m = document.getElementById('mobileMenu'); m.style.display = m.style.display === 'none' || !m.style.display ? 'block' : 'none'; }
+    document.querySelectorAll('#mobileMenu a').forEach(function(l) { l.addEventListener('click', function() { document.getElementById('mobileMenu').style.display = 'none'; }); });
 
     function switchTab(tab) {
-      document.querySelectorAll('.tab-item').forEach((el, i) => el.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'signup' && i === 1)));
+      document.querySelectorAll('.tab-item').forEach(function(el, i) { el.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'signup' && i === 1)); });
       document.getElementById('login-form').classList.toggle('hidden', tab !== 'login');
       document.getElementById('signup-form').classList.toggle('hidden', tab !== 'signup');
       document.getElementById('login-footer').classList.toggle('hidden', tab !== 'login');
       document.getElementById('signup-footer').classList.toggle('hidden', tab !== 'signup');
       hideError(); hideSuccess();
     }
-    function selectRole(role) { selectedRole = role; document.querySelectorAll('.role-card').forEach((el, i) => el.classList.toggle('active', (role === 'customer' && i === 0) || (role === 'agent' && i === 1))); }
+    function selectRole(role) { selectedRole = role; document.querySelectorAll('.role-card').forEach(function(el, i) { el.classList.toggle('active', (role === 'customer' && i === 0) || (role === 'agent' && i === 1)); }); }
 
-    function showError(msg) { const b = document.getElementById('error-box'); b.textContent = msg; b.classList.add('show'); hideSuccess(); }
+    function showError(msg) { var b = document.getElementById('error-box'); b.textContent = msg; b.classList.add('show'); hideSuccess(); }
     function hideError() { document.getElementById('error-box').classList.remove('show'); }
-    function showSuccess(msg) { const b = document.getElementById('success-box'); b.innerHTML = msg; b.style.display = 'block'; hideError(); }
+    function showSuccess(msg) { var b = document.getElementById('success-box'); b.innerHTML = msg; b.style.display = 'block'; hideError(); }
     function hideSuccess() { document.getElementById('success-box').style.display = 'none'; }
 
-    // ========================
-    // 로그인
-    // ========================
     async function handleLogin() {
       hideError(); hideSuccess();
-      const email = document.getElementById('login-email').value.trim();
-      const pw = document.getElementById('login-pw').value;
+      var email = document.getElementById('login-email').value.trim();
+      var pw = document.getElementById('login-pw').value;
       if (!email) return showError('이메일을 입력해주세요.');
       if (!pw) return showError('비밀번호를 입력해주세요.');
       if (!supabaseReady) return showError('서버에 연결할 수 없습니다. 페이지를 새로고침 해주세요.');
 
-      const btn = document.getElementById('login-btn');
+      var btn = document.getElementById('login-btn');
       btn.disabled = true; btn.textContent = '로그인 중...';
       try {
         await signIn(email, pw);
         location.href = '/dashboard.html';
       } catch (err) {
-        const msg = err.message;
-        if (msg.includes('Invalid login credentials')) {
-          showError('이메일 또는 비밀번호가 올바르지 않습니다.');
-        } else if (msg.includes('Email not confirmed')) {
-          showError('이메일 인증이 완료되지 않았습니다. 가입 시 받은 메일에서 인증 링크를 클릭해주세요.');
-        } else {
-          showError(msg);
-        }
+        var msg = err.message;
+        if (msg.includes('Invalid login credentials')) showError('이메일 또는 비밀번호가 올바르지 않습니다.');
+        else if (msg.includes('Email not confirmed')) showError('이메일 인증이 완료되지 않았습니다. 가입 시 받은 메일에서 인증 링크를 클릭해주세요.');
+        else showError(msg);
       } finally { btn.disabled = false; btn.textContent = '로그인'; }
     }
 
-    // ========================
-    // 회원가입
-    // ========================
     async function handleSignup() {
       hideError(); hideSuccess();
-      const name = document.getElementById('signup-name').value.trim();
-      const email = document.getElementById('signup-email').value.trim();
-      const pw = document.getElementById('signup-pw').value;
-      const pw2 = document.getElementById('signup-pw2').value;
-      const phone = document.getElementById('signup-phone').value.trim();
-      const agreeTerms = document.getElementById('agree-terms').checked;
+      var name = document.getElementById('signup-name').value.trim();
+      var email = document.getElementById('signup-email').value.trim();
+      var pw = document.getElementById('signup-pw').value;
+      var pw2 = document.getElementById('signup-pw2').value;
+      var phone = document.getElementById('signup-phone').value.trim();
+      var agreeTerms = document.getElementById('agree-terms').checked;
 
-      // 유효성 검사
       if (!name) return showError('이름을 입력해주세요.');
       if (!email) return showError('이메일을 입력해주세요.');
       if (!pw || pw.length < 8) return showError('비밀번호를 8자 이상 입력해주세요.');
@@ -207,23 +194,20 @@
       if (!agreeTerms) return showError('이용약관 및 개인정보처리방침에 동의해주세요.');
       if (!supabaseReady) return showError('서버에 연결할 수 없습니다. 페이지를 새로고침 해주세요.');
 
-      const btn = document.getElementById('signup-btn');
+      var btn = document.getElementById('signup-btn');
       btn.disabled = true; btn.textContent = '가입 중...';
       try {
-        const result = await signUp(email, pw, name, selectedRole);
+        var result = await signUp(email, pw, name, selectedRole);
         console.log('[InsuBee] signUp result:', JSON.stringify(result, null, 2));
 
-        // Supabase signUp 결과 분석
-        const user = result?.user;
-        const session = result?.session;
+        var user = result ? result.user : null;
+        var session = result ? result.session : null;
 
         if (user && session) {
-          // 이메일 확인 비활성화 상태 → 즉시 로그인됨
           console.log('[InsuBee] 즉시 로그인됨, 프로필 생성 중...');
           await setupUserProfile(user.id, name, phone, selectedRole);
           location.href = '/dashboard.html';
         } else if (user && !session) {
-          // 이메일 확인 필요
           console.log('[InsuBee] 이메일 확인 필요');
           showSuccess(
             '🎉 회원가입이 완료되었습니다!<br><br>' +
@@ -231,60 +215,44 @@
             '메일의 인증 링크를 클릭한 후 로그인해주세요.<br><br>' +
             '<span style="font-size:12px;color:#666">메일이 안 보이면 스팸함도 확인해주세요.</span>'
           );
-          // 가입 폼 숨기고 로그인 탭으로
           switchTab('login');
-          // 성공 메시지는 유지
           document.getElementById('success-box').style.display = 'block';
         } else {
           showError('회원가입 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
         }
       } catch (err) {
-        const msg = err.message;
-        if (msg.includes('already registered') || msg.includes('already been registered')) {
-          showError('이미 등록된 이메일입니다. 로그인을 시도해주세요.');
-        } else if (msg.includes('valid email')) {
-          showError('유효한 이메일 주소를 입력해주세요.');
-        } else if (msg.includes('at least')) {
-          showError('비밀번호가 너무 짧습니다. 8자 이상 입력해주세요.');
-        } else {
-          showError(msg);
-        }
+        var msg = err.message;
+        if (msg.includes('already registered') || msg.includes('already been registered')) showError('이미 등록된 이메일입니다. 로그인을 시도해주세요.');
+        else if (msg.includes('valid email')) showError('유효한 이메일 주소를 입력해주세요.');
+        else if (msg.includes('at least')) showError('비밀번호가 너무 짧습니다. 8자 이상 입력해주세요.');
+        else showError(msg);
       } finally { btn.disabled = false; btn.textContent = '회원가입'; }
     }
 
-    // 프로필 초기 설정 (즉시 로그인된 경우)
     async function setupUserProfile(userId, name, phone, role) {
-      if (!supabase) return;
+      if (!sb) return;
       try {
-        // profiles 업데이트 (트리거가 이미 생성했을 수 있음)
-        await supabase.from('profiles').upsert({
-          id: userId,
-          name: name,
-          phone: phone,
-          role: role,
-          agreed_terms: true,
-          agreed_privacy: true,
+        await sb.from('profiles').upsert({
+          id: userId, name: name, phone: phone, role: role,
+          agreed_terms: true, agreed_privacy: true,
           agreed_marketing: document.getElementById('agree-marketing').checked
         }, { onConflict: 'id' });
 
-        // 역할별 테이블 생성
         if (role === 'customer') {
-          const { data: existing } = await supabase.from('customers').select('id').eq('user_id', userId).maybeSingle();
-          if (!existing) await supabase.from('customers').insert({ user_id: userId });
+          var cr = await sb.from('customers').select('id').eq('user_id', userId).maybeSingle();
+          if (!cr.data) await sb.from('customers').insert({ user_id: userId });
         } else {
-          const { data: existing } = await supabase.from('agents').select('id').eq('user_id', userId).maybeSingle();
-          if (!existing) await supabase.from('agents').insert({ user_id: userId });
+          var ag = await sb.from('agents').select('id').eq('user_id', userId).maybeSingle();
+          if (!ag.data) await sb.from('agents').insert({ user_id: userId });
         }
       } catch (e) {
         console.warn('[InsuBee] setupUserProfile error (non-fatal):', e.message);
-        // 프로필 생성 실패는 치명적이지 않음 — 첫 로그인 후 재시도 가능
       }
     }
 
-    // Enter 키로 로그인/가입
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', function(e) {
       if (e.key !== 'Enter') return;
-      const loginVisible = !document.getElementById('login-form').classList.contains('hidden');
+      var loginVisible = !document.getElementById('login-form').classList.contains('hidden');
       if (loginVisible) handleLogin();
       else handleSignup();
     });
