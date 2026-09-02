@@ -66,11 +66,19 @@ async function getSession() {
 
 async function getCurrentProfile() {
   var user = await getCurrentUser();
-  if (!user || !sb) return null;
+  if (!user || !sb) { console.warn('[InsuBee] getCurrentProfile: no user or sb'); return null; }
   try {
     var r = await sb.from('profiles').select('*').eq('id', user.id).single();
+    if (r.error) {
+      console.error('[InsuBee] profiles query error:', r.error.message, r.error.code, r.error.hint);
+      // 테이블이 없으면 안내
+      if (r.error.message && r.error.message.includes('relation')) {
+        showPageError('profiles 테이블이 존재하지 않습니다. Supabase SQL Editor에서 테이블을 생성해주세요.');
+      }
+      return null;
+    }
     return r.data;
-  } catch (e) { return null; }
+  } catch (e) { console.error('[InsuBee] getCurrentProfile catch:', e); return null; }
 }
 
 async function signUp(email, password, name, role) {
