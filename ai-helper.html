@@ -336,6 +336,36 @@
       }
     }
 
+    /* ======== FAQ 자동응답 데이터 ======== */
+    var FAQ_ANSWERS = [
+      { keywords: ['실손', '실비', '건강보험', '건강 보험'],
+        answer: '🏥 건강보험은 질병·상해 시 정해진 금액을 지급하는 정액형이고, 실손보험(실비)은 실제 치료비를 보장하는 실손형입니다.\n\n✅ 건강보험 → 진단비, 수술비 등 약정 금액 지급\n✅ 실손보험 → 병원비 영수증 기준 실제 비용 보상\n\n두 보험은 성격이 다르므로 함께 가입하면 보장이 더 탄탄해집니다. 구체적인 상담은 인슈비에서 검증된 보험설계사를 찾아보세요! 😊' },
+      { keywords: ['20대', '사회초년', '젊은', '처음'],
+        answer: '👋 20대에 추천하는 보험 가입 순서입니다!\n\n1️⃣ 실손의료보험 — 병원비 걱정을 덜어줍니다\n2️⃣ 운전자보험 — 운전하신다면 필수\n3️⃣ 암보험/3대질병 — 젊을 때 가입하면 보험료가 저렴합니다\n\n💡 비갱신형으로 가입하면 보험료가 오르지 않아 장기적으로 유리합니다. 더 자세한 상담은 인슈비에서 전문 설계사를 만나보세요!' },
+      { keywords: ['보험료', '절약', '줄이', '아끼', '저렴', '싸게'],
+        answer: '💰 보험료를 줄이는 실용적인 팁입니다!\n\n✅ 불필요한 특약 정리 — 중복 보장 제거\n✅ 비갱신형 전환 검토\n✅ 연납/일시납 할인 활용 (5~8% 할인)\n✅ 건강체 할인 — 비흡연·건강 등급 적용\n✅ 보험 리모델링 상담\n\n현재 가입된 보험을 분석받고 싶다면 인슈비에서 설계사를 찾아 무료 상담받아보세요! 😊' },
+      { keywords: ['종신', '종신보험'],
+        answer: '📋 종신보험은 피보험자가 사망하면 유족에게 보험금을 지급하는 보험입니다.\n\n✅ 특징: 보장이 평생 유지됨\n✅ 장점: 유족 생활비, 상속 준비, 사망 정리 자금\n✅ 고려사항: 보험료가 높은 편이므로 소득 대비 적정 금액 설정이 중요\n\n💡 부양가족이 있다면 고려할 만하고, 1인 가구라면 다른 보험 우선이 나을 수 있습니다. 인슈비에서 설계사와 상담해보세요!' },
+      { keywords: ['갱신', '비갱신', '갱신형'],
+        answer: '🔄 갱신형 vs 비갱신형 비교입니다!\n\n📌 갱신형\n- 초기 보험료가 저렴\n- 일정 주기(1~15년)마다 보험료 인상\n- 장기적으로 비용 부담 증가\n\n📌 비갱신형\n- 처음 정한 보험료가 끝까지 유지\n- 초기 보험료가 다소 높음\n- 장기적으로 유리\n\n💡 장기 유지할 보험은 비갱신형, 단기 보장은 갱신형이 유리합니다. 인슈비에서 설계사와 비교 상담받아보세요!' },
+      { keywords: ['청약철회', '철회', '취소', '해지'],
+        answer: '📝 보험 청약철회 안내입니다!\n\n✅ 청약일로부터 15일 이내, 첫 보험료 납입일로부터 30일 이내 가능\n✅ 철회 시 납입한 보험료 전액 환급\n✅ 보험사 고객센터 또는 서면으로 신청\n\n⚠️ 청약철회와 해지는 다릅니다. 해지 시에는 해약환급금만 돌려받게 됩니다. 자세한 상담은 인슈비 설계사에게 문의하세요!' },
+      { keywords: ['보험금', '청구', '접수', '서류'],
+        answer: '📋 보험금 청구 절차 안내입니다!\n\n1️⃣ 보험사 고객센터/앱에서 청구 접수\n2️⃣ 필요 서류 제출 (진단서, 영수증 등)\n3️⃣ 보험사 심사 (보통 3~7영업일)\n4️⃣ 보험금 지급\n\n📌 필요 서류: 보험금 청구서, 진단서/소견서, 의료비 영수증, 통장 사본\n\n💡 실손보험은 다른 보험과 중복 청구 가능합니다! 자세한 내용은 인슈비 설계사에게 문의하세요!' }
+    ];
+
+    function findFaqAnswer(question) {
+      var q = question.toLowerCase();
+      for (var i = 0; i < FAQ_ANSWERS.length; i++) {
+        for (var j = 0; j < FAQ_ANSWERS[i].keywords.length; j++) {
+          if (q.indexOf(FAQ_ANSWERS[i].keywords[j]) !== -1) {
+            return FAQ_ANSWERS[i].answer;
+          }
+        }
+      }
+      return null;
+    }
+
     /* ======== AI CHAT ======== */
     var chatHistory = []; // { role, content } 배열
     var isLoading = false;
@@ -351,7 +381,6 @@
 
       var bubble = document.createElement('div');
       bubble.className = 'msg-bubble';
-      // 줄바꿈 처리
       bubble.innerHTML = text.replace(/\n/g, '<br>');
 
       div.appendChild(avatar);
@@ -410,7 +439,7 @@
       setLoading(true);
       showTyping();
 
-      // 빠른 질문 칩 숨기기 (첫 메시지 이후)
+      // 빠른 질문 칩 숨기기
       var chips = document.getElementById('quickChips');
       if (chips) chips.style.display = 'none';
 
@@ -424,23 +453,40 @@
           })
         });
 
+        // 응답이 JSON인지 먼저 확인
+        var contentType = res.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+          throw new Error('NOT_JSON:' + res.status);
+        }
+
         var data = await res.json();
         removeTyping();
 
         if (data.error) {
-          addMessage('bot', '죄송합니다. ' + data.error);
+          // API 에러 → FAQ 폴백 시도
+          var fallback = findFaqAnswer(text);
+          if (fallback) {
+            addMessage('bot', fallback + '\n\n💡 (자동응답으로 안내드렸습니다)');
+          } else {
+            addMessage('bot', '😢 ' + data.error + '\n\n위의 자주 묻는 질문(FAQ)도 참고해보세요!');
+          }
         } else {
           addMessage('bot', data.reply);
-          // 히스토리 업데이트
           chatHistory.push({ role: 'user', content: text });
           chatHistory.push({ role: 'assistant', content: data.reply });
-          // 최근 6턴만 유지
           if (chatHistory.length > 12) chatHistory = chatHistory.slice(-12);
         }
       } catch (err) {
         removeTyping();
         console.error('Chat error:', err);
-        addMessage('bot', '네트워크 오류가 발생했습니다. 인터넷 연결을 확인하고 다시 시도해주세요. 😢');
+
+        // 네트워크/서버 에러 → FAQ 폴백 시도
+        var fallback = findFaqAnswer(text);
+        if (fallback) {
+          addMessage('bot', fallback + '\n\n💡 (AI 연결이 원활하지 않아 자동응답으로 안내드렸습니다)');
+        } else {
+          addMessage('bot', '😢 AI 서비스에 연결할 수 없습니다.\n\n다음을 시도해보세요:\n• 잠시 후 다시 질문하기\n• 위의 자주 묻는 질문(FAQ) 확인하기\n• 인슈비 보험설계사에게 직접 상담하기');
+        }
       }
 
       setLoading(false);
