@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <title>인슈비 — AI도우미</title>
+  <meta name="description" content="보험 용어, 가입 가이드, 상품 비교까지 AI가 쉽게 설명해 드립니다.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+  <style>
+    /* ======== FAQ ======== */
+    .faq-section { margin-bottom: 32px; }
+    .faq-item {
+      background: #fff; border: 1px solid var(--gray-200);
+      border-radius: var(--radius); margin-bottom: 8px;
+      overflow: hidden; transition: border-color .2s;
+    }
+    .faq-item:hover { border-color: var(--gray-300); }
+    .faq-item.open { border-color: var(--navy); }
+    .faq-q {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; cursor: pointer; gap: 12px;
+      font-size: 15px; font-weight: 600; color: var(--gray-800);
+      user-select: none; -webkit-user-select: none;
+    }
+    .faq-q:hover { color: var(--navy); }
+    .faq-q .arrow {
+      font-size: 18px; color: var(--gray-400);
+      transition: transform .2s; flex-shrink: 0;
+    }
+    .faq-item.open .faq-q .arrow { transform: rotate(180deg); color: var(--navy); }
+    .faq-a {
+      max-height: 0; overflow: hidden; transition: max-height .25s ease;
+    }
+    .faq-a-inner {
+      padding: 0 20px 16px;
+      font-size: 14px; color: var(--gray-600); line-height: 1.8;
+    }
+
+    /* ======== CHAT ======== */
+    .chat-section { margin-bottom: 32px; }
+    .chat-container {
+      background: #fff; border: 1px solid var(--gray-200);
+      border-radius: var(--radius-lg); overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+    .chat-header {
+      background: var(--navy); color: var(--white);
+      padding: 16px 20px; display: flex; align-items: center; gap: 12px;
+    }
+    .chat-header-icon {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--gold); color: var(--navy);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; font-weight: 800; flex-shrink: 0;
+    }
+    .chat-header-text h3 { font-size: 16px; font-weight: 700; }
+    .chat-header-text p { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+    .chat-messages {
+      height: 400px; overflow-y: auto;
+      padding: 20px; display: flex; flex-direction: column; gap: 12px;
+      background: var(--gray-50);
+    }
+    @media (max-width: 600px) { .chat-messages { height: 320px; } }
+
+    .msg { display: flex; gap: 8px; max-width: 85%; animation: fadeIn .2s; }
+    .msg.bot { align-self: flex-start; }
+    .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+    .msg-avatar {
+      width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700;
+    }
+    .msg.bot .msg-avatar { background: var(--gold); color: var(--navy); }
+    .msg.user .msg-avatar { background: var(--navy); color: var(--white); }
+    .msg-bubble {
+      padding: 12px 16px; border-radius: 16px;
+      font-size: 14px; line-height: 1.7; word-break: break-word;
+    }
+    .msg.bot .msg-bubble {
+      background: #fff; color: var(--gray-800);
+      border: 1px solid var(--gray-200); border-top-left-radius: 4px;
+    }
+    .msg.user .msg-bubble {
+      background: var(--navy); color: var(--white);
+      border-top-right-radius: 4px;
+    }
+
+    /* 타이핑 인디케이터 */
+    .typing-indicator { display: flex; gap: 4px; padding: 4px 0; }
+    .typing-indicator span {
+      width: 6px; height: 6px; background: var(--gray-400);
+      border-radius: 50%; animation: bounce .6s infinite alternate;
+    }
+    .typing-indicator span:nth-child(2) { animation-delay: .15s; }
+    .typing-indicator span:nth-child(3) { animation-delay: .3s; }
+    @keyframes bounce { to { transform: translateY(-4px); opacity: 0.4; } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+    .chat-input-area {
+      display: flex; gap: 8px; padding: 12px 16px;
+      border-top: 1px solid var(--gray-200); background: #fff;
+    }
+    .chat-input {
+      flex: 1; padding: 10px 14px; border: 1px solid var(--gray-300);
+      border-radius: 24px; font-family: inherit; font-size: 14px;
+      outline: none; transition: border-color .2s;
+    }
+    .chat-input:focus { border-color: var(--navy); }
+    .chat-send {
+      width: 40px; height: 40px; border-radius: 50%; border: none;
+      background: var(--gold); color: var(--navy); font-size: 18px;
+      cursor: pointer; transition: background .2s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .chat-send:hover { background: var(--gold-light); }
+    .chat-send:disabled { background: var(--gray-300); color: var(--gray-500); cursor: not-allowed; }
+
+    /* 빠른 질문 칩 */
+    .quick-chips {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      padding: 8px 16px 12px; background: #fff;
+    }
+    .quick-chip {
+      padding: 6px 12px; border-radius: 16px; font-size: 12px;
+      background: var(--gold-pale); color: var(--navy); font-weight: 500;
+      cursor: pointer; border: 1px solid transparent;
+      transition: all .2s; white-space: nowrap;
+    }
+    .quick-chip:hover { border-color: var(--gold); background: #fcecc4; }
+
+    .disclaimer {
+      text-align: center; font-size: 12px; color: var(--gray-400);
+      padding: 12px; line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a href="/" class="site-logo"><img src="logo.png" alt="인슈비" style="height:36px;"></a>
+      <nav class="site-nav">
+        <a href="agents.html">고객 상담신청</a>
+        <a href="https://insubee.kr" target="_blank">보험뉴스</a>
+        <a href="ai-helper.html" class="active">AI도우미</a>
+        <a href="login.html" class="btn-register">로그인</a>
+      </nav>
+      <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+    </div>
+    <div id="mobileMenu" class="mobile-menu">
+      <a href="agents.html">고객 상담신청</a>
+      <a href="https://insubee.kr" target="_blank">보험뉴스</a>
+      <a href="ai-helper.html" class="highlight">AI도우미</a>
+      <a href="login.html">로그인 →</a>
+    </div>
+  </header>
+
+  <div class="page-container">
+
+    <h1 class="page-title">🤖 AI 보험도우미</h1>
+    <p class="page-subtitle">보험 용어, 가입 가이드, 보험 종류 비교까지 AI가 쉽게 설명해 드립니다.</p>
+
+    <!-- ======== FAQ ======== -->
+    <div class="faq-section">
+      <h2 style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:12px;">📋 자주 묻는 질문</h2>
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>보험은 왜 필요한가요?</span>
+          <i class="ti ti-chevron-down arrow"></i>
+        </div>
+        <div class="faq-a"><div class="faq-a-inner">
+          예상치 못한 사고, 질병, 재해 등으로 큰 비용이 발생할 때 경제적 부담을 줄여주는 것이 보험의 핵심 역할입니다. 특히 의료비, 간병비, 사망 시 유족 생활비 등을 대비할 수 있어, 미래의 불확실성에 대한 안전장치가 됩니다.
+        </div></div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>생명보험과 손해보험의 차이는?</span>
+          <i class="ti ti-chevron-down arrow"></i>
+        </div>
+        <div class="faq-a"><div class="faq-a-inner">
+          <strong>생명보험</strong>은 사람의 생존·사망에 관한 보험으로 종신보험, 연금보험, 교육보험 등이 있습니다. 약정한 금액을 정액으로 지급합니다.<br><br>
+          <strong>손해보험</strong>은 재산·배상·신체 손해를 보상하는 보험으로 자동차보험, 화재보험, 실손의료보험 등이 있습니다. 실제 손해액 기준으로 실손 보상합니다.
+        </div></div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>실손의료보험이란 무엇인가요?</span>
+          <i class="ti ti-chevron-down arrow"></i>
+        </div>
+        <div class="faq-a"><div class="faq-a-inner">
+          실손의료보험(실비보험)은 병원비 중 국민건강보험이 보장하지 않는 본인부담금을 보상해주는 보험입니다. 입원·통원 의료비를 일정 자기부담금을 제외하고 실제 발생한 금액만큼 보상합니다. 2024년 이후 가입분은 4세대 실손으로, 비급여 의료비에 대해 자기부담률이 적용됩니다.
+        </div></div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>보험 가입 후 청약철회가 가능한가요?</span>
+          <i class="ti ti-chevron-down arrow"></i>
+        </div>
+        <div class="faq-a"><div class="faq-a-inner">
+          네, 보험계약 체결일로부터 <strong>15일 이내</strong>에 청약철회가 가능합니다. 철회 시 이미 납입한 보험료 전액을 돌려받을 수 있습니다. 다만, 진단계약 등 일부 보험은 제외될 수 있으니 약관을 확인하세요.
+        </div></div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>보험금 청구는 어떻게 하나요?</span>
+          <i class="ti ti-chevron-down arrow"></i>
+        </div>
+        <div class="faq-a"><div class="faq-a-inner">
+          ① 보험사 콜센터 또는 앱으로 보험금 청구 접수<br>
+          ② 진단서, 영수증 등 구비서류 제출<br>
+          ③ 보험사 심사 후 보험금 지급 (보통 3영업일 이내)<br><br>
+          담당 보험설계사가 있다면 대행 청구를 도와줄 수도 있습니다. 인슈비에서 설계사를 찾아보세요!
+        </div></div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">
+          <span>보험설계사를 어떻게 선택해야 하나요?</span>
+          <i class="ti ti-chevron-down arrow"></i>
+        </div>
+        <div class="faq-a"><div class="faq-a-inner">
+          좋은 보험설계사를 고르는 기준:<br>
+          ✅ 금융감독원 등록 여부 확인<br>
+          ✅ 경력 및 전문분야 확인<br>
+          ✅ 여러 보험사 상품 비교 가능 여부<br>
+          ✅ 고객 리뷰·평판 확인<br><br>
+          인슈비에서는 검증된 설계사만 활동하며, 지역·전문분야별로 설계사를 직접 검색하고 선택할 수 있습니다.
+        </div></div>
+      </div>
+    </div>
+
+    <!-- ======== AI CHAT ======== -->
+    <div class="chat-section">
+      <h2 style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:12px;">💬 AI에게 직접 물어보세요</h2>
+
+      <div class="chat-container">
+        <div class="chat-header">
+          <div class="chat-header-icon">🐝</div>
+          <div class="chat-header-text">
+            <h3>인슈비 AI도우미</h3>
+            <p>보험 관련 궁금한 점을 편하게 물어보세요</p>
+          </div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+          <div class="msg bot">
+            <div class="msg-avatar">🐝</div>
+            <div class="msg-bubble">
+              안녕하세요! 인슈비 AI도우미입니다 🤗<br><br>
+              보험 용어, 가입 가이드, 보험 종류 비교 등 궁금한 점을 편하게 물어보세요. 아래 빠른 질문 버튼을 눌러도 됩니다!
+            </div>
+          </div>
+        </div>
+
+        <div class="quick-chips" id="quickChips">
+          <button class="quick-chip" onclick="sendQuick('건강보험과 실손보험 차이가 뭐예요?')">건강보험 vs 실손보험</button>
+          <button class="quick-chip" onclick="sendQuick('20대에 꼭 가입할 보험이 있나요?')">20대 추천 보험</button>
+          <button class="quick-chip" onclick="sendQuick('보험료를 줄이는 방법이 있나요?')">보험료 절약 팁</button>
+          <button class="quick-chip" onclick="sendQuick('종신보험이 뭐예요? 꼭 필요한가요?')">종신보험이란?</button>
+          <button class="quick-chip" onclick="sendQuick('보험 갱신형과 비갱신형 차이는?')">갱신형 vs 비갱신형</button>
+        </div>
+
+        <div class="chat-input-area">
+          <input type="text" class="chat-input" id="chatInput"
+                 placeholder="보험에 대해 궁금한 점을 입력하세요..."
+                 maxlength="500"
+                 onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();sendMessage();}">
+          <button class="chat-send" id="chatSend" onclick="sendMessage()" title="전송">
+            <i class="ti ti-send"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="disclaimer">
+        ⚠️ AI도우미는 일반적인 보험 정보를 안내하며, 개인 맞춤 상담이 아닙니다.<br>
+        정확한 상담은 <a href="agents.html" style="color:var(--gold);font-weight:600;">인슈비 보험설계사</a>에게 문의하세요.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-top">
+        <div>
+          <div class="footer-brand">인슈비 InsuBee</div>
+          <p>내가 원할 때, 전문가를 만나는 보험 플랫폼</p>
+        </div>
+        <div class="footer-links">
+          <a href="privacy.html">개인정보처리방침</a>
+          <a href="terms.html">이용약관</a>
+          <a href="https://insubee.kr" target="_blank">인슈비뉴스</a>
+          <a href="login.html">로그인</a>
+        </div>
+      </div>
+      <div class="footer-info">
+        원니원주식회사 | 대표 김성원<br>
+        인천광역시 남동구 남동대로 199번길 96, 202호<br>
+        사업자등록번호: 686-86-03106 | 고객상담실: 070-4147-8887<br>
+        © 2026 원니원주식회사. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+  <script>
+    /* ======== FAQ 아코디언 ======== */
+    function toggleFaq(el) {
+      var item = el.parentElement;
+      var answer = item.querySelector('.faq-a');
+      var isOpen = item.classList.contains('open');
+
+      // 다른 모든 FAQ 닫기
+      document.querySelectorAll('.faq-item.open').forEach(function(other) {
+        if (other !== item) {
+          other.classList.remove('open');
+          other.querySelector('.faq-a').style.maxHeight = '0';
+        }
+      });
+
+      if (isOpen) {
+        item.classList.remove('open');
+        answer.style.maxHeight = '0';
+      } else {
+        item.classList.add('open');
+        answer.style.maxHeight = answer.scrollHeight + 'px';
+      }
+    }
+
+    /* ======== AI CHAT ======== */
+    var chatHistory = []; // { role, content } 배열
+    var isLoading = false;
+
+    function addMessage(role, text) {
+      var box = document.getElementById('chatMessages');
+      var div = document.createElement('div');
+      div.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
+
+      var avatar = document.createElement('div');
+      avatar.className = 'msg-avatar';
+      avatar.textContent = role === 'user' ? '👤' : '🐝';
+
+      var bubble = document.createElement('div');
+      bubble.className = 'msg-bubble';
+      // 줄바꿈 처리
+      bubble.innerHTML = text.replace(/\n/g, '<br>');
+
+      div.appendChild(avatar);
+      div.appendChild(bubble);
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function showTyping() {
+      var box = document.getElementById('chatMessages');
+      var div = document.createElement('div');
+      div.className = 'msg bot';
+      div.id = 'typing-msg';
+
+      var avatar = document.createElement('div');
+      avatar.className = 'msg-avatar';
+      avatar.textContent = '🐝';
+
+      var bubble = document.createElement('div');
+      bubble.className = 'msg-bubble';
+      bubble.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+
+      div.appendChild(avatar);
+      div.appendChild(bubble);
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function removeTyping() {
+      var el = document.getElementById('typing-msg');
+      if (el) el.remove();
+    }
+
+    function setLoading(val) {
+      isLoading = val;
+      var btn = document.getElementById('chatSend');
+      var input = document.getElementById('chatInput');
+      btn.disabled = val;
+      input.disabled = val;
+      if (!val) input.focus();
+    }
+
+    function sendQuick(text) {
+      document.getElementById('chatInput').value = text;
+      sendMessage();
+    }
+
+    async function sendMessage() {
+      if (isLoading) return;
+      var input = document.getElementById('chatInput');
+      var text = input.value.trim();
+      if (!text) return;
+
+      input.value = '';
+      addMessage('user', text);
+      setLoading(true);
+      showTyping();
+
+      // 빠른 질문 칩 숨기기 (첫 메시지 이후)
+      var chips = document.getElementById('quickChips');
+      if (chips) chips.style.display = 'none';
+
+      try {
+        var res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: text,
+            history: chatHistory
+          })
+        });
+
+        var data = await res.json();
+        removeTyping();
+
+        if (data.error) {
+          addMessage('bot', '죄송합니다. ' + data.error);
+        } else {
+          addMessage('bot', data.reply);
+          // 히스토리 업데이트
+          chatHistory.push({ role: 'user', content: text });
+          chatHistory.push({ role: 'assistant', content: data.reply });
+          // 최근 6턴만 유지
+          if (chatHistory.length > 12) chatHistory = chatHistory.slice(-12);
+        }
+      } catch (err) {
+        removeTyping();
+        console.error('Chat error:', err);
+        addMessage('bot', '네트워크 오류가 발생했습니다. 인터넷 연결을 확인하고 다시 시도해주세요. 😢');
+      }
+
+      setLoading(false);
+    }
+
+    /* ======== Mobile Menu ======== */
+    function toggleMobileMenu() {
+      var m = document.getElementById('mobileMenu');
+      m.style.display = m.style.display === 'none' ? 'block' : 'none';
+    }
+  </script>
+</body>
+</html>
