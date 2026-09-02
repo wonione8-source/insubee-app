@@ -1,6 +1,7 @@
 /* ============================================================
    인슈비 AI도우미 — Cloudflare Pages Function
    Claude API 프록시 (API키 서버사이드 보호)
+   v8 — 모델명 수정, 디버그 정보 추가, 에러 메시지 개선
    ============================================================ */
 
 const SYSTEM_PROMPT = `당신은 "인슈비 AI도우미"입니다. 보험에 관심 있는 일반 고객을 위한 친절한 보험 안내 도우미입니다.
@@ -19,45 +20,44 @@ const SYSTEM_PROMPT = `당신은 "인슈비 AI도우미"입니다. 보험에 관
 - 답변은 간결하고 친절하게, 300자 이내로 작성하세요
 - 이모지를 적절히 사용해 친근한 느낌을 주세요`;
 
-export async function onRequestPost(context) {
-  // CORS
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Content-Type': 'application/json'
-  };
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+  'Content-Type': 'application/json'
+};
 
+function jsonResponse(body, status = 200) {
+  return new Response(JSON.stringify(body), { status, headers: CORS_HEADERS });
+}
+
+export async function onRequestPost(context) {
   try {
+    /* ── 1. API 키 확인 ── */
     const apiKey = context.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'API 키가 설정되지 않았습니다.' }), {
-        status: 500, headers: corsHeaders
-      });
+      return jsonResponse({
+        error: 'AI 서비스 준비 중입니다. 잠시 후 다시 시도해주세요.',
+        code: 'NO_API_KEY'
+      }, 500);
     }
 
+    /* ── 2. 요청 파싱 ── */
     const body = await context.request.json();
     const userMessage = (body.message || '').trim();
 
     if (!userMessage) {
-      return new Response(JSON.stringify({ error: '메시지를 입력해주세요.' }), {
-        status: 400, headers: corsHeaders
-      });
+      return jsonResponse({ error: '메시지를 입력해주세요.' }, 400);
     }
-
     if (userMessage.length > 500) {
-      return new Response(JSON.stringify({ error: '메시지가 너무 깁니다. 500자 이내로 입력해주세요.' }), {
-        status: 400, headers: corsHeaders
-      });
+      return jsonResponse({ error: '메시지가 너무 깁니다. 500자 이내로 입력해주세요.' }, 400);
     }
 
-    // 대화 히스토리 (최근 6턴만)
+    /* ── 3. 대화 히스토리 (최근 6턴만) ── */
     const history = Array.isArray(body.history) ? body.history.slice(-6) : [];
-    const messages = [
-      ...history,
-      { role: 'user', content: userMessage }
-    ];
+    const messages = [...history, { role: 'user', content: userMessage }];
 
+    /* ── 4. Claude API 호출 ── */
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -66,36 +66,66 @@ export async function onRequestPost(context) {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 1024,
         system: SYSTEM_PROMPT,
         messages: messages
       })
     });
 
+    /* ── 5. API 에러 처리 ── */
     if (!response.ok) {
-      const errText = await response.text();
-      console.error('Claude API error:', response.status, errText);
-      return new Response(JSON.stringify({
-        error: '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'
-      }), { status: 502, headers: corsHeaders });
+      let errDetail = '';
+      try { errDetail = await response.text(); } catch (_) {}
+      console.error('Claude API error:', response.status, errDetail);
+
+      // 크레딧 소진
+      if (response.status === 400 && errDetail.includes('credit')) {
+        return jsonResponse({
+          error: 'AI 서비스가 일시적으로 제한되었습니다. 아래 자주 묻는 질문을 참고해주세요.',
+          code: 'CREDIT_EXHAUSTED'
+        }, 502);
+      }
+      // 인증 오류
+      if (response.status === 401) {
+        return jsonResponse({
+          error: 'AI 서비스 인증에 문제가 있습니다. 관리자에게 문의해주세요.',
+          code: 'AUTH_ERROR',
+          debug: response.status
+        }, 502);
+      }
+      // 모델 / 요청 오류
+      if (response.status === 404 || response.status === 400) {
+        return jsonResponse({
+          error: 'AI 서비스에 일시적인 문제가 있습니다. 잠시 후 다시 시도해주세요.',
+          code: 'API_REQUEST_ERROR',
+          debug: response.status
+        }, 502);
+      }
+      // 기타
+      return jsonResponse({
+        error: '일시적인 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+        code: 'API_ERROR',
+        debug: response.status
+      }, 502);
     }
 
+    /* ── 6. 정상 응답 파싱 ── */
     const data = await response.json();
     const reply = data.content
       .filter(b => b.type === 'text')
       .map(b => b.text)
       .join('\n');
 
-    return new Response(JSON.stringify({ reply }), {
-      status: 200, headers: corsHeaders
-    });
+    return jsonResponse({ reply });
 
   } catch (err) {
-    console.error('Function error:', err);
-    return new Response(JSON.stringify({
-      error: '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'
-    }), { status: 500, headers: corsHeaders });
+    console.error('Function error:', err.message, err.stack);
+    return jsonResponse({
+      error: '서버에 일시적인 문제가 있습니다. 잠시 후 다시 시도해주세요.',
+      code: 'FUNCTION_ERROR',
+      debug: err.message
+    }, 500);
   }
 }
 
