@@ -1,7 +1,7 @@
 /* ============================================================
    인슈비앱 (InsuBee) — Core App JS
    Supabase 클라이언트 + Auth + 유틸리티
-   v4 — 2026-09-01 변수 충돌 해결
+   v5 — 2026-09-02 프로필 자동생성 + 로그인/로그아웃 네비
    ============================================================ */
 
 const SUPABASE_URL = 'https://dfzhjqychbodpdwdkdab.supabase.co';
@@ -70,10 +70,23 @@ async function getCurrentProfile() {
   try {
     var r = await sb.from('profiles').select('*').eq('id', user.id).single();
     if (r.error) {
-      console.error('[InsuBee] profiles query error:', r.error.message, r.error.code, r.error.hint);
-      // 테이블이 없으면 안내
-      if (r.error.message && r.error.message.includes('relation')) {
-        showPageError('profiles 테이블이 존재하지 않습니다. Supabase SQL Editor에서 테이블을 생성해주세요.');
+      console.warn('[InsuBee] profiles query error:', r.error.message, r.error.code);
+      // 프로필이 없으면 자동 생성 (트리거가 놓친 경우)
+      if (r.error.code === 'PGRST116') {
+        console.log('[InsuBee] 프로필 자동 생성 시도...');
+        var meta = user.user_metadata || {};
+        var ins = await sb.from('profiles').insert({
+          id: user.id,
+          name: meta.name || user.email.split('@')[0],
+          email: user.email,
+          role: meta.role || 'customer'
+        }).select().single();
+        if (ins.error) {
+          console.error('[InsuBee] 프로필 자동 생성 실패:', ins.error.message);
+          return null;
+        }
+        console.log('[InsuBee] 프로필 자동 생성 완료');
+        return ins.data;
       }
       return null;
     }
@@ -103,6 +116,57 @@ async function signOut() {
   if (sb) await sb.auth.signOut();
   location.href = '/login.html';
 }
+
+// 로그인 상태에 따라 네비게이션 자동 업데이트
+async function updateNavForAuth() {
+  var user = await getCurrentUser();
+  // 데스크톱 네비
+  var nav = document.querySelector('.site-nav, .nav');
+  if (!nav) return;
+  // 모바일 메뉴
+  var mobileMenu = document.getElementById('mobileMenu');
+  
+  if (user) {
+    // 로그인 상태: 마이페이지 + 로그아웃 표시
+    var authLink = nav.querySelector('[href*="login.html"]');
+    if (authLink) {
+      authLink.href = 'mypage.html';
+      authLink.textContent = '마이페이지';
+    }
+    // 로그아웃 버튼 추가 (없으면)
+    if (!nav.querySelector('.btn-logout')) {
+      var logoutBtn = document.createElement('a');
+      logoutBtn.href = '#';
+      logoutBtn.className = 'btn-logout';
+      logoutBtn.textContent = '로그아웃';
+      logoutBtn.style.cssText = 'color:rgba(255,255,255,0.6);font-size:13px;padding:8px 12px;cursor:pointer;';
+      logoutBtn.onclick = function(e) { e.preventDefault(); signOut(); };
+      nav.appendChild(logoutBtn);
+    }
+    // 모바일 메뉴 업데이트
+    if (mobileMenu) {
+      var mAuthLink = mobileMenu.querySelector('[href*="login.html"]');
+      if (mAuthLink) {
+        mAuthLink.href = 'mypage.html';
+        mAuthLink.textContent = '마이페이지';
+      }
+      if (!mobileMenu.querySelector('.btn-logout')) {
+        var mLogout = document.createElement('a');
+        mLogout.href = '#';
+        mLogout.className = 'btn-logout';
+        mLogout.textContent = '로그아웃';
+        mLogout.style.cssText = 'display:block;padding:12px 0;color:#c00;font-size:15px;';
+        mLogout.onclick = function(e) { e.preventDefault(); signOut(); };
+        mobileMenu.appendChild(mLogout);
+      }
+    }
+  }
+}
+
+// 페이지 로드 시 자동 실행
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(updateNavForAuth, 100);
+});
 
 async function requireAuth() {
   var user = await getCurrentUser();
