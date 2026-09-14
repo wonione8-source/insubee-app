@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <title>인슈비 — 로그인</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a href="/" class="site-logo"><img src="logo.png" alt="인슈비" style="height:36px;"></a>
+      <nav class="site-nav">
+        <a href="agents.html">고객 상담신청</a>
+        <a href="https://insubee.kr" target="_blank">보험뉴스</a>
+        <a href="ai-helper.html">AI도우미</a>
+        <a href="login.html" class="btn-register active">로그인</a>
+      </nav>
+      <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+    </div>
+    <div id="mobileMenu" class="mobile-menu">
+      <a href="agents.html">고객 상담신청</a>
+      <a href="https://insubee.kr" target="_blank">보험뉴스</a>
+        <a href="ai-helper.html">AI도우미</a>
+      <a href="login.html" class="highlight">로그인 / 회원가입</a>
+    </div>
+  </header>
+
+  <div class="page-container" style="max-width:440px">
+    <div style="text-align:center;padding:24px 0 32px">
+      <div style="font-size:36px;font-weight:900;color:var(--navy)">인슈<span style="color:var(--gold)">비</span></div>
+      <p class="text-muted" style="margin-top:8px">나에게 맞는 보험설계사를 찾아보세요</p>
+    </div>
+
+    <div id="error-box" class="error-msg"></div>
+    <div id="success-box" style="display:none;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:10px;padding:14px 18px;margin-bottom:16px;font-size:14px;line-height:1.6;text-align:center"></div>
+
+    <div class="tab-group">
+      <div class="tab-item active" onclick="switchTab('login')">로그인</div>
+      <div class="tab-item" onclick="switchTab('signup')">회원가입</div>
+    </div>
+
+    <!-- 로그인 폼 -->
+    <div id="login-form">
+      <div class="form-group">
+        <label class="form-label">이메일</label>
+        <input type="email" class="form-input" id="login-email" placeholder="이메일 주소 입력">
+      </div>
+      <div class="form-group">
+        <label class="form-label">비밀번호</label>
+        <input type="password" class="form-input" id="login-pw" placeholder="비밀번호 입력">
+      </div>
+      <button type="button" class="btn btn-navy btn-block btn-lg" id="login-btn" onclick="handleLogin()">로그인</button>
+    </div>
+
+    <!-- 회원가입 폼 -->
+    <div id="signup-form" class="hidden">
+      <div class="form-group">
+        <label class="form-label">가입 유형을 선택하세요</label>
+        <div class="role-selector">
+          <div class="role-card active" onclick="selectRole('customer')">
+            <i class="ti ti-user"></i>
+            <div class="role-title">일반 고객</div>
+            <div class="role-desc">보험 상담을 받고 싶어요</div>
+          </div>
+          <div class="role-card" onclick="selectRole('agent')">
+            <i class="ti ti-briefcase"></i>
+            <div class="role-title">보험설계사</div>
+            <div class="role-desc">고객을 만나고 싶어요</div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">이름</label>
+        <input type="text" class="form-input" id="signup-name" placeholder="실명 입력">
+      </div>
+      <div class="form-group">
+        <label class="form-label">이메일</label>
+        <input type="email" class="form-input" id="signup-email" placeholder="이메일 주소 입력">
+      </div>
+      <div class="form-group">
+        <label class="form-label">비밀번호</label>
+        <input type="password" class="form-input" id="signup-pw" placeholder="8자 이상" minlength="8">
+      </div>
+      <div class="form-group">
+        <label class="form-label">비밀번호 확인</label>
+        <input type="password" class="form-input" id="signup-pw2" placeholder="비밀번호 다시 입력">
+      </div>
+      <div class="form-group">
+        <label class="form-label">휴대폰 번호</label>
+        <input type="tel" class="form-input" id="signup-phone" placeholder="010-0000-0000">
+      </div>
+      <div class="form-group" style="margin-top:20px">
+        <div class="terms-check">
+          <input type="checkbox" id="agree-terms">
+          <label for="agree-terms"><a href="terms.html" target="_blank">이용약관</a> 및 <a href="privacy.html" target="_blank">개인정보처리방침</a>에 동의합니다 (필수)</label>
+        </div>
+        <div class="terms-check">
+          <input type="checkbox" id="agree-marketing">
+          <label for="agree-marketing">마케팅 정보 수신에 동의합니다 (선택)</label>
+        </div>
+      </div>
+      <button type="button" class="btn btn-navy btn-block btn-lg" id="signup-btn" onclick="handleSignup()">회원가입</button>
+    </div>
+
+    <div style="text-align:center;padding:20px;font-size:13px;color:var(--gray-500)" id="login-footer">
+      계정이 없으신가요? <a href="#" onclick="switchTab('signup');return false;" style="color:var(--navy);font-weight:600">회원가입</a>
+    </div>
+    <div style="text-align:center;padding:20px;font-size:13px;color:var(--gray-500)" id="signup-footer" class="hidden">
+      이미 계정이 있으신가요? <a href="#" onclick="switchTab('login');return false;" style="color:var(--navy);font-weight:600">로그인</a>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-top">
+        <div><div class="footer-brand">인슈비 InsuBee</div><p>내가 원할 때, 전문가를 만나는 보험 플랫폼</p></div>
+        <div class="footer-links">
+          <a href="privacy.html">개인정보처리방침</a>
+          <a href="terms.html">이용약관</a>
+          <a href="https://insubee.kr" target="_blank">인슈비뉴스</a>
+        </div>
+      </div>
+      <div class="footer-info">원니원주식회사 | 대표 김성원<br>인천광역시 남동구 남동대로 199번길 96, 202호<br>사업자등록번호: 686-86-03106 | 고객상담실: 070-4147-8887<br>© 2026 원니원주식회사. All rights reserved.</div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+  <script>
+    var selectedRole = 'customer';
+
+    (async function() {
+      try {
+        var user = await getCurrentUser();
+        if (user) location.href = '/dashboard.html';
+      } catch (e) { /* 무시 */ }
+    })();
+
+    function toggleMobileMenu() { var m = document.getElementById('mobileMenu'); m.style.display = m.style.display === 'none' || !m.style.display ? 'block' : 'none'; }
+    document.querySelectorAll('#mobileMenu a').forEach(function(l) { l.addEventListener('click', function() { document.getElementById('mobileMenu').style.display = 'none'; }); });
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-item').forEach(function(el, i) { el.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'signup' && i === 1)); });
+      document.getElementById('login-form').classList.toggle('hidden', tab !== 'login');
+      document.getElementById('signup-form').classList.toggle('hidden', tab !== 'signup');
+      document.getElementById('login-footer').classList.toggle('hidden', tab !== 'login');
+      document.getElementById('signup-footer').classList.toggle('hidden', tab !== 'signup');
+      hideError(); hideSuccess();
+    }
+    function selectRole(role) { selectedRole = role; document.querySelectorAll('.role-card').forEach(function(el, i) { el.classList.toggle('active', (role === 'customer' && i === 0) || (role === 'agent' && i === 1)); }); }
+
+    function showError(msg) { var b = document.getElementById('error-box'); b.textContent = msg; b.classList.add('show'); hideSuccess(); }
+    function hideError() { document.getElementById('error-box').classList.remove('show'); }
+    function showSuccess(msg) { var b = document.getElementById('success-box'); b.innerHTML = msg; b.style.display = 'block'; hideError(); }
+    function hideSuccess() { document.getElementById('success-box').style.display = 'none'; }
+
+    async function handleLogin() {
+      hideError(); hideSuccess();
+      var email = document.getElementById('login-email').value.trim();
+      var pw = document.getElementById('login-pw').value;
+      if (!email) return showError('이메일을 입력해주세요.');
+      if (!pw) return showError('비밀번호를 입력해주세요.');
+      if (!supabaseReady) return showError('서버에 연결할 수 없습니다. 페이지를 새로고침 해주세요.');
+
+      var btn = document.getElementById('login-btn');
+      btn.disabled = true; btn.textContent = '로그인 중...';
+      try {
+        await signIn(email, pw);
+        location.href = '/dashboard.html';
+      } catch (err) {
+        var msg = err.message;
+        if (msg.includes('Invalid login credentials')) showError('이메일 또는 비밀번호가 올바르지 않습니다.');
+        else if (msg.includes('Email not confirmed')) showError('이메일 인증이 완료되지 않았습니다. 가입 시 받은 메일에서 인증 링크를 클릭해주세요.');
+        else showError(msg);
+      } finally { btn.disabled = false; btn.textContent = '로그인'; }
+    }
+
+    async function handleSignup() {
+      hideError(); hideSuccess();
+      var name = document.getElementById('signup-name').value.trim();
+      var email = document.getElementById('signup-email').value.trim();
+      var pw = document.getElementById('signup-pw').value;
+      var pw2 = document.getElementById('signup-pw2').value;
+      var phone = document.getElementById('signup-phone').value.trim();
+      var agreeTerms = document.getElementById('agree-terms').checked;
+
+      if (!name) return showError('이름을 입력해주세요.');
+      if (!email) return showError('이메일을 입력해주세요.');
+      if (!pw || pw.length < 8) return showError('비밀번호를 8자 이상 입력해주세요.');
+      if (pw !== pw2) return showError('비밀번호가 일치하지 않습니다.');
+      if (!agreeTerms) return showError('이용약관 및 개인정보처리방침에 동의해주세요.');
+      if (!supabaseReady) return showError('서버에 연결할 수 없습니다. 페이지를 새로고침 해주세요.');
+
+      var btn = document.getElementById('signup-btn');
+      btn.disabled = true; btn.textContent = '가입 중...';
+      try {
+        var result = await signUp(email, pw, name, selectedRole);
+        console.log('[InsuBee] signUp result:', JSON.stringify(result, null, 2));
+
+        var user = result ? result.user : null;
+        var session = result ? result.session : null;
+
+        if (user && session) {
+          console.log('[InsuBee] 즉시 로그인됨, 프로필 생성 중...');
+          await setupUserProfile(user.id, name, phone, selectedRole);
+          location.href = '/dashboard.html';
+        } else if (user && !session) {
+          console.log('[InsuBee] 이메일 확인 필요');
+          showSuccess(
+            '🎉 회원가입이 완료되었습니다!<br><br>' +
+            '<strong>' + email + '</strong>으로 인증 메일이 발송되었습니다.<br>' +
+            '메일의 인증 링크를 클릭한 후 로그인해주세요.<br><br>' +
+            '<span style="font-size:12px;color:#666">메일이 안 보이면 스팸함도 확인해주세요.</span>'
+          );
+          switchTab('login');
+          document.getElementById('success-box').style.display = 'block';
+        } else {
+          showError('회원가입 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
+        }
+      } catch (err) {
+        var msg = err.message;
+        if (msg.includes('already registered') || msg.includes('already been registered')) showError('이미 등록된 이메일입니다. 로그인을 시도해주세요.');
+        else if (msg.includes('valid email')) showError('유효한 이메일 주소를 입력해주세요.');
+        else if (msg.includes('at least')) showError('비밀번호가 너무 짧습니다. 8자 이상 입력해주세요.');
+        else showError(msg);
+      } finally { btn.disabled = false; btn.textContent = '회원가입'; }
+    }
+
+    async function setupUserProfile(userId, name, phone, role) {
+      if (!sb) return;
+      try {
+        await sb.from('profiles').upsert({
+          id: userId, name: name, phone: phone, role: role,
+          agreed_terms: true, agreed_privacy: true,
+          agreed_marketing: document.getElementById('agree-marketing').checked
+        }, { onConflict: 'id' });
+
+        if (role === 'customer') {
+          var cr = await sb.from('customers').select('id').eq('user_id', userId).maybeSingle();
+          if (!cr.data) await sb.from('customers').insert({ user_id: userId });
+        } else {
+          var ag = await sb.from('agents').select('id').eq('user_id', userId).maybeSingle();
+          if (!ag.data) await sb.from('agents').insert({ user_id: userId });
+        }
+      } catch (e) {
+        console.warn('[InsuBee] setupUserProfile error (non-fatal):', e.message);
+      }
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key !== 'Enter') return;
+      var loginVisible = !document.getElementById('login-form').classList.contains('hidden');
+      if (loginVisible) handleLogin();
+      else handleSignup();
+    });
+  </script>
+</body>
+</html>

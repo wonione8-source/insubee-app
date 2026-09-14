@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <title>인슈비 — 고객 상담신청</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a href="/" class="site-logo"><img src="logo.png" alt="인슈비" style="height:36px;"></a>
+      <nav class="site-nav">
+        <a href="agents.html" class="active">고객 상담신청</a>
+        <a href="https://insubee.kr" target="_blank">보험뉴스</a>
+        <a href="ai-helper.html">AI도우미</a>
+        <a href="login.html" class="btn-register" id="nav-auth">로그인</a>
+      </nav>
+      <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+    </div>
+    <div id="mobileMenu" class="mobile-menu">
+      <a href="agents.html">고객 상담신청</a>
+      <a href="https://insubee.kr" target="_blank">보험뉴스</a>
+      <a href="ai-helper.html">AI도우미</a>
+      <a href="login.html" class="highlight" id="mobile-auth">로그인 →</a>
+    </div>
+  </header>
+
+  <div class="page-container">
+    <h1 class="page-title">고객 상담신청</h1>
+    <p class="page-subtitle">지역, 전문분야로 나에게 맞는 보험설계사를 찾아보세요</p>
+
+    <div class="search-bar">
+      <i class="ti ti-search"></i>
+      <input type="text" class="form-input" id="search-input" placeholder="이름, 보험사로 검색" oninput="debounceSearch()">
+    </div>
+
+    <div class="filter-bar" id="filter-bar">
+      <div class="chip active" data-filter="all" onclick="filterBy('all')">전체</div>
+      <div class="chip" data-filter="건강보험" onclick="filterBy('건강보험')">건강보험</div>
+      <div class="chip" data-filter="생명보험" onclick="filterBy('생명보험')">생명보험</div>
+      <div class="chip" data-filter="손해보험" onclick="filterBy('손해보험')">손해보험</div>
+      <div class="chip" data-filter="자동차보험" onclick="filterBy('자동차보험')">자동차보험</div>
+      <div class="chip" data-filter="연금보험" onclick="filterBy('연금보험')">연금보험</div>
+    </div>
+
+    <div style="margin-bottom:20px">
+      <select class="form-input" id="region-select" onchange="loadAgents()" style="font-size:14px;padding:10px 14px">
+        <option value="">전체 지역</option>
+      </select>
+    </div>
+
+    <div id="agents-list">
+      <div class="spinner"></div>
+    </div>
+  </div>
+
+  <!-- 설계사 상세 모달 -->
+  <div class="modal-overlay" id="agent-modal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div id="agent-detail-content"></div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <div class="footer-top">
+        <div><div class="footer-brand">인슈비 InsuBee</div><p>내가 원할 때, 전문가를 만나는 보험 플랫폼</p></div>
+        <div class="footer-links">
+          <a href="privacy.html">개인정보처리방침</a>
+          <a href="terms.html">이용약관</a>
+          <a href="https://insubee.kr" target="_blank">인슈비뉴스</a>
+        </div>
+      </div>
+      <div class="footer-info">원니원주식회사 | 대표 김성원<br>인천광역시 남동구 남동대로 199번길 96, 202호<br>사업자등록번호: 686-86-03106 | 고객상담실: 070-4147-8887<br>© 2026 원니원주식회사. All rights reserved.</div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+  <script>
+    var currentFilter = 'all';
+    var searchTimeout;
+    var isLoggedIn = false;
+
+    function toggleMobileMenu() { var m = document.getElementById('mobileMenu'); m.style.display = m.style.display === 'none' || !m.style.display ? 'block' : 'none'; }
+    document.querySelectorAll('#mobileMenu a').forEach(function(l) { l.addEventListener('click', function() { document.getElementById('mobileMenu').style.display = 'none'; }); });
+
+    function emptyStateHTML(detail) {
+      return '<div class="empty-state" style="padding:60px 20px;text-align:center">' +
+        '<div style="font-size:56px;margin-bottom:16px">🐝</div>' +
+        '<p style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:8px">아직 등록된 설계사가 없습니다</p>' +
+        '<p style="font-size:14px;color:var(--gray-500);line-height:1.7;margin-bottom:24px">인슈비는 현재 사전 준비 단계입니다.<br>보험설계사로 먼저 등록하고 고객을 만나보세요!</p>' +
+        (detail ? '<p style="font-size:12px;color:#aaa;margin-bottom:16px">' + detail + '</p>' : '') +
+        '<a href="login.html" class="btn btn-primary btn-lg">무료 회원가입</a></div>';
+    }
+
+    (async function() {
+      try {
+        var user = await getCurrentUser();
+        if (user) {
+          isLoggedIn = true;
+          var navAuth = document.getElementById('nav-auth');
+          var mobAuth = document.getElementById('mobile-auth');
+          if (navAuth) { navAuth.textContent = '대시보드'; navAuth.href = 'dashboard.html'; }
+          if (mobAuth) { mobAuth.textContent = '대시보드 →'; mobAuth.href = 'dashboard.html'; }
+        }
+      } catch (e) { console.warn('[agents] auth check skipped:', e.message); }
+
+      try {
+        var select = document.getElementById('region-select');
+        REGIONS.forEach(function(r) { var opt = document.createElement('option'); opt.value = r; opt.textContent = r; select.appendChild(opt); });
+      } catch (e) { console.warn('[agents] filter init error:', e.message); }
+
+      loadAgents();
+    })();
+
+    function filterBy(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.chip').forEach(function(c) { c.classList.toggle('active', c.dataset.filter === filter); });
+      loadAgents();
+    }
+    function debounceSearch() { clearTimeout(searchTimeout); searchTimeout = setTimeout(loadAgents, 300); }
+
+    async function loadAgents() {
+      var container = document.getElementById('agents-list');
+      container.innerHTML = '<div class="spinner"></div>';
+
+      if (!supabaseReady) {
+        container.innerHTML = emptyStateHTML(supabaseError || '서버에 연결할 수 없습니다');
+        return;
+      }
+
+      var filters = {};
+      if (currentFilter !== 'all') filters.specialty = currentFilter;
+      var search = document.getElementById('search-input').value.trim();
+      if (search) filters.search = search;
+      var region = document.getElementById('region-select').value;
+      if (region) filters.region_sido = region;
+
+      try {
+        var agents = await getAgents(filters);
+        if (agents.length === 0) { container.innerHTML = emptyStateHTML(); return; }
+        container.innerHTML = agents.map(function(a) {
+          return '<div class="agent-card" onclick="showAgentDetail(\'' + a.id + '\')">' +
+            '<div class="agent-avatar">' + ((a.profiles && a.profiles.name) || '?')[0] + '</div>' +
+            '<div class="agent-info">' +
+            '<div style="display:flex;align-items:center;gap:6px"><span class="agent-name">' + ((a.profiles && a.profiles.name) || '설계사') + '</span>' +
+            (a.is_premium ? '<span class="premium-badge">★ Premium</span>' : '') + '</div>' +
+            '<div class="agent-company">' + (a.company || '소속 미등록') + '</div>' +
+            '<div class="agent-meta"><span class="rating"><i class="ti ti-star-filled"></i> ' + (a.avg_rating ? a.avg_rating.toFixed(1) : '0.0') + ' <span style="color:var(--gray-400)">(' + (a.review_count || 0) + ')</span></span>' +
+            '<span><i class="ti ti-map-pin"></i> ' + (a.region_sido || '전국') + '</span>' +
+            '<span><i class="ti ti-clock"></i> ' + (a.experience_years || 0) + '년</span></div>' +
+            (a.specialties && a.specialties.length ? '<div class="agent-specialty">' + a.specialties.slice(0,4).map(function(s){return '<span>'+s+'</span>';}).join('') + '</div>' : '') +
+            '</div></div>';
+        }).join('');
+      } catch (err) {
+        var detail = err.message === 'DB_NOT_READY' ? 'DB 테이블이 아직 생성되지 않았습니다' : err.message;
+        container.innerHTML = emptyStateHTML(detail);
+        console.error('[agents] loadAgents error:', err);
+      }
+    }
+
+    async function showAgentDetail(agentId) {
+      var modal = document.getElementById('agent-modal');
+      var content = document.getElementById('agent-detail-content');
+      content.innerHTML = '<div class="spinner"></div>';
+      modal.classList.add('show');
+      try {
+        var agent = await getAgentDetail(agentId);
+        var reviews = await getAgentReviews(agentId);
+        var name = (agent.profiles && agent.profiles.name) || '설계사';
+        content.innerHTML =
+          '<div style="text-align:center;margin-bottom:20px"><div class="profile-avatar" style="width:72px;height:72px;font-size:28px">' + name[0] + '</div>' +
+          '<h2 style="font-size:20px;font-weight:800">' + name + '</h2>' +
+          '<p class="text-sm text-muted">' + (agent.company || '소속 미등록') + ' · ' + (agent.region_sido || '전국') + '</p>' +
+          (agent.is_premium ? '<span class="premium-badge mt-8" style="display:inline-flex">★ Premium 설계사</span>' : '') + '</div>' +
+          '<div class="detail-info-grid"><div class="detail-info-item"><div class="label">경력</div><div class="value">' + (agent.experience_years || 0) + '년</div></div>' +
+          '<div class="detail-info-item"><div class="label">평점</div><div class="value" style="color:var(--warning)">★ ' + (agent.avg_rating ? agent.avg_rating.toFixed(1) : '0.0') + '</div></div>' +
+          '<div class="detail-info-item"><div class="label">총 상담</div><div class="value">' + (agent.total_consultations || 0) + '건</div></div>' +
+          '<div class="detail-info-item"><div class="label">계약 체결</div><div class="value">' + (agent.total_contracts || 0) + '건</div></div></div>' +
+          (agent.bio ? '<div class="mb-16"><div class="form-label">자기소개</div><p style="font-size:14px;color:var(--gray-700);line-height:1.7">' + agent.bio + '</p></div>' : '') +
+          '<button class="btn btn-navy btn-block btn-lg mb-16" onclick="' + (isLoggedIn ? "openRequestForm('" + agent.id + "','" + name + "')" : "location.href='login.html'") + '"><i class="ti ti-message-plus"></i> ' + (isLoggedIn ? '상담 요청하기' : '로그인 후 상담 요청') + '</button>' +
+          '<button class="btn btn-outline btn-block mt-16" onclick="closeModal()">닫기</button>';
+      } catch (err) { content.innerHTML = '<div class="empty-state"><p>정보를 불러올 수 없습니다</p></div>'; }
+    }
+
+    function openRequestForm(agentId, agentName) {
+      var content = document.getElementById('agent-detail-content');
+      content.innerHTML =
+        '<h3 style="font-size:18px;font-weight:700;margin-bottom:4px">' + agentName + ' 설계사에게</h3>' +
+        '<p class="text-sm text-muted mb-24">상담 요청 보내기</p>' +
+        '<div class="form-group"><label class="form-label">관심 보험 종류</label>' +
+        '<select class="form-input" id="req-type"><option value="">선택하세요</option><option value="생명보험">생명보험</option><option value="건강보험">건강보험 (실손/암)</option><option value="자동차보험">자동차보험</option><option value="손해보험">손해보험</option><option value="연금보험">연금·저축보험</option><option value="기타">기타</option></select></div>' +
+        '<div class="form-group"><label class="form-label">요청 메시지</label><textarea class="form-input" id="req-message" placeholder="상담 받고 싶은 내용을 간단히 적어주세요"></textarea></div>' +
+        '<div class="form-group"><label class="form-label">선호 시간대</label><input type="text" class="form-input" id="req-time" placeholder="예: 평일 오후 2시~5시"></div>' +
+        '<button type="button" class="btn btn-navy btn-block btn-lg" id="req-submit-btn" onclick="submitRequest(\'' + agentId + '\')"><i class="ti ti-send"></i> 요청 보내기</button>' +
+        '<button type="button" class="btn btn-outline btn-block mt-8" onclick="showAgentDetail(\'' + agentId + '\')">돌아가기</button>';
+    }
+
+    async function submitRequest(agentId) {
+      var typeEl = document.getElementById('req-type');
+      if (!typeEl.value) { showToast('보험 종류를 선택해주세요'); return; }
+      var btn = document.getElementById('req-submit-btn'); btn.disabled = true; btn.innerHTML = '전송 중...';
+      try {
+        await createMatchingRequest(agentId, {
+          insurance_type: typeEl.value,
+          message: document.getElementById('req-message').value,
+          preferred_contact: 'chat',
+          preferred_time: document.getElementById('req-time').value
+        });
+        closeModal(); showToast('상담 요청이 전송되었습니다!');
+      } catch (err) { showToast(err.message); }
+      finally { btn.disabled = false; btn.innerHTML = '<i class="ti ti-send"></i> 요청 보내기'; }
+    }
+
+    function closeModal() { document.getElementById('agent-modal').classList.remove('show'); }
+    document.getElementById('agent-modal').addEventListener('click', function(e) { if (e.target === e.currentTarget) closeModal(); });
+  </script>
+</body>
+</html>
