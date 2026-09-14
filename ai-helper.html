@@ -86,7 +86,6 @@
       border-top-right-radius: 4px;
     }
 
-    /* 타이핑 인디케이터 */
     .typing-indicator { display: flex; gap: 4px; padding: 4px 0; }
     .typing-indicator span {
       width: 6px; height: 6px; background: var(--gray-400);
@@ -116,7 +115,6 @@
     .chat-send:hover { background: var(--gold-light); }
     .chat-send:disabled { background: var(--gray-300); color: var(--gray-500); cursor: not-allowed; }
 
-    /* 빠른 질문 칩 */
     .quick-chips {
       display: flex; flex-wrap: wrap; gap: 6px;
       padding: 8px 16px 12px; background: #fff;
@@ -133,6 +131,40 @@
       text-align: center; font-size: 12px; color: var(--gray-400);
       padding: 12px; line-height: 1.6;
     }
+
+    /* ======== 하단 네비게이션 ======== */
+    .bottom-nav-ai {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 64px;
+      background: #1a1f3d;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      z-index: 200;
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+    .bottom-nav-ai a {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      text-decoration: none;
+      color: rgba(255,255,255,0.5);
+      font-size: 11px;
+      font-weight: 500;
+      padding: 6px 12px;
+      transition: color .2s;
+      min-width: 52px;
+    }
+    .bottom-nav-ai a i { font-size: 22px; }
+    .bottom-nav-ai a.active { color: #e6a817; }
+    .bottom-nav-ai a:hover { color: rgba(255,255,255,0.85); }
+
+    /* 하단 네비 높이만큼 본문 여백 */
+    .page-container { padding-bottom: 80px; }
+    .site-footer { margin-bottom: 64px; }
   </style>
 </head>
 <body>
@@ -310,6 +342,25 @@
     </div>
   </footer>
 
+  <!-- ======== 하단 네비게이션 ======== -->
+  <nav class="bottom-nav-ai">
+    <a href="/index.html">
+      <i class="ti ti-home"></i>홈
+    </a>
+    <a href="/agents.html">
+      <i class="ti ti-search"></i>설계사
+    </a>
+    <a href="/my-requests.html">
+      <i class="ti ti-message-circle"></i>상담
+    </a>
+    <a href="/notifications.html">
+      <i class="ti ti-bell"></i>알림
+    </a>
+    <a href="/mypage.html">
+      <i class="ti ti-user"></i>마이
+    </a>
+  </nav>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
   <script>
@@ -319,7 +370,6 @@
       var answer = item.querySelector('.faq-a');
       var isOpen = item.classList.contains('open');
 
-      // 다른 모든 FAQ 닫기
       document.querySelectorAll('.faq-item.open').forEach(function(other) {
         if (other !== item) {
           other.classList.remove('open');
@@ -367,7 +417,7 @@
     }
 
     /* ======== AI CHAT ======== */
-    var chatHistory = []; // { role, content } 배열
+    var chatHistory = [];
     var isLoading = false;
 
     function addMessage(role, text) {
@@ -439,7 +489,6 @@
       setLoading(true);
       showTyping();
 
-      // 빠른 질문 칩 숨기기
       var chips = document.getElementById('quickChips');
       if (chips) chips.style.display = 'none';
 
@@ -447,13 +496,9 @@
         var res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: text,
-            history: chatHistory
-          })
+          body: JSON.stringify({ message: text, history: chatHistory })
         });
 
-        // 응답이 JSON인지 먼저 확인
         var contentType = res.headers.get('content-type') || '';
         if (!contentType.includes('application/json')) {
           throw new Error('NOT_JSON:' + res.status);
@@ -463,7 +508,6 @@
         removeTyping();
 
         if (data.error) {
-          // API 에러 → FAQ 폴백 시도
           var fallback = findFaqAnswer(text);
           if (fallback) {
             addMessage('bot', fallback + '\n\n💡 (자동응답으로 안내드렸습니다)');
@@ -479,8 +523,6 @@
       } catch (err) {
         removeTyping();
         console.error('Chat error:', err);
-
-        // 네트워크/서버 에러 → FAQ 폴백 시도
         var fallback = findFaqAnswer(text);
         if (fallback) {
           addMessage('bot', fallback + '\n\n💡 (AI 연결이 원활하지 않아 자동응답으로 안내드렸습니다)');
@@ -497,6 +539,16 @@
       var m = document.getElementById('mobileMenu');
       m.style.display = m.style.display === 'none' ? 'block' : 'none';
     }
+
+    /* ======== 현재 페이지 네비 활성화 ======== */
+    (function() {
+      var path = location.pathname;
+      document.querySelectorAll('.bottom-nav-ai a').forEach(function(a) {
+        if (path.includes('ai-helper')) {
+          // AI도우미는 별도 탭 없으므로 홈 비활성
+        }
+      });
+    })();
   </script>
 </body>
 </html>
