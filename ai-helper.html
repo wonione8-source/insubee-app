@@ -134,37 +134,30 @@
 
     /* ======== 하단 네비게이션 ======== */
     .bottom-nav-ai {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      height: 64px;
-      background: #1a1f3d;
-      border-top: 1px solid rgba(255,255,255,0.1);
+      width: 100%;
+      background: #fff;
+      border-top: 2px solid #e5e7eb;
+      border-bottom: 2px solid #e5e7eb;
       display: flex;
       align-items: center;
       justify-content: space-around;
-      z-index: 200;
-      padding-bottom: env(safe-area-inset-bottom, 0);
+      padding: 12px 0;
     }
     .bottom-nav-ai a {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 2px;
+      gap: 4px;
       text-decoration: none;
-      color: rgba(255,255,255,0.5);
-      font-size: 11px;
-      font-weight: 500;
-      padding: 6px 12px;
+      color: #6b7280;
+      font-size: 12px;
+      font-weight: 600;
+      flex: 1;
       transition: color .2s;
-      min-width: 52px;
     }
-    .bottom-nav-ai a i { font-size: 22px; }
+    .bottom-nav-ai a i { font-size: 24px; }
+    .bottom-nav-ai a:hover { color: #1a1f3d; }
     .bottom-nav-ai a.active { color: #e6a817; }
-    .bottom-nav-ai a:hover { color: rgba(255,255,255,0.85); }
-
-    /* 하단 네비 높이만큼 본문 여백 */
-    .page-container { padding-bottom: 80px; }
-    .site-footer { margin-bottom: 64px; }
   </style>
 </head>
 <body>
@@ -318,6 +311,25 @@
 
   </div>
 
+  <!-- ======== 하단 네비게이션 (푸터 바로 위) ======== -->
+  <nav class="bottom-nav-ai">
+    <a href="/index.html">
+      <i class="ti ti-home"></i>홈
+    </a>
+    <a href="/agents.html">
+      <i class="ti ti-search"></i>설계사
+    </a>
+    <a href="/my-requests.html">
+      <i class="ti ti-message-circle"></i>상담
+    </a>
+    <a href="/notifications.html">
+      <i class="ti ti-bell"></i>알림
+    </a>
+    <a href="/mypage.html">
+      <i class="ti ti-user"></i>마이
+    </a>
+  </nav>
+
   <!-- FOOTER -->
   <footer class="site-footer">
     <div class="site-footer-inner">
@@ -341,25 +353,6 @@
       </div>
     </div>
   </footer>
-
-  <!-- ======== 하단 네비게이션 ======== -->
-  <nav class="bottom-nav-ai">
-    <a href="/index.html">
-      <i class="ti ti-home"></i>홈
-    </a>
-    <a href="/agents.html">
-      <i class="ti ti-search"></i>설계사
-    </a>
-    <a href="/my-requests.html">
-      <i class="ti ti-message-circle"></i>상담
-    </a>
-    <a href="/notifications.html">
-      <i class="ti ti-bell"></i>알림
-    </a>
-    <a href="/mypage.html">
-      <i class="ti ti-user"></i>마이
-    </a>
-  </nav>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
